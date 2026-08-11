@@ -1,0 +1,14 @@
+# Optional local/production-style backend container.
+# MongoDB is NOT included — use MongoDB Atlas and set MONGODB_URI in .env.
+services:
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "${PORT:-5000}:5000"
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+    restart: unless-stopped

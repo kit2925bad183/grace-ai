@@ -1,0 +1,20 @@
+# Render.com deployment blueprint (optional)
+# Set secrets in Render dashboard — do not commit real values.
+services:
+  - type: web
+    name: grace-ai-api
+    runtime: node
+    rootDir: backend
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: CLIENT_URL
+        sync: false
+      - key: PORT
+        value: 5000
