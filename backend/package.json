@@ -8,7 +8,7 @@
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
-    "seed": "echo \"Use npm run seed:demo for development demo data. Never run seed against production.\" && exit 1",
+    "seed": "tsx seed/seed.ts",
     "seed:demo": "tsx seed/seed.ts",
     "create-admin": "tsx scripts/create-admin.ts",
     "test": "vitest run",

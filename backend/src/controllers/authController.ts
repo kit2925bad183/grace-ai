@@ -19,7 +19,7 @@ import {
   completeGoogleLogin,
   verifyGoogleIdToken,
 } from '../services/googleAuthService';
-import { env, isGoogleOAuthConfigured } from '../config/env';
+import { env, isGoogleOAuthConfigured, getPrimaryClientUrl } from '../config/env';
 import { getRoleDashboardPath } from '../utils/roles';
 import { REFRESH_COOKIE } from '../utils/cookies';
 import { User } from '../models/User';
@@ -195,28 +195,28 @@ export function googleAuth(_req: Request, res: Response, next: NextFunction): vo
 
 export function googleCallback(req: Request, res: Response, next: NextFunction): void {
   if (!isGoogleOAuthConfigured()) {
-    res.redirect(`${env.clientUrl}/login?error=google_not_configured`);
+    res.redirect(`${getPrimaryClientUrl()}/login?error=google_not_configured`);
     return;
   }
 
   passport.authenticate('google', { session: false }, async (err: Error | null, user: Express.User | false) => {
     try {
       if (err || !user) {
-        res.redirect(`${env.clientUrl}/login?error=google_auth_failed`);
+        res.redirect(`${getPrimaryClientUrl()}/login?error=google_auth_failed`);
         return;
       }
 
       const dbUser = await User.findById(user.id);
       if (!dbUser) {
-        res.redirect(`${env.clientUrl}/login?error=google_auth_failed`);
+        res.redirect(`${getPrimaryClientUrl()}/login?error=google_auth_failed`);
         return;
       }
 
       const session = await completeGoogleLogin(dbUser);
       applySessionCookies(res, session);
-      res.redirect(`${env.clientUrl}${getRoleDashboardPath(dbUser.role)}`);
+      res.redirect(`${getPrimaryClientUrl()}${getRoleDashboardPath(dbUser.role)}`);
     } catch {
-      res.redirect(`${env.clientUrl}/login?error=google_auth_failed`);
+      res.redirect(`${getPrimaryClientUrl()}/login?error=google_auth_failed`);
     }
   })(req, res, next);
 }

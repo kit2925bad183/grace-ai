@@ -722,10 +722,8 @@ MongoDB is **not** containerized — use MongoDB Atlas.
 
 ### Push commands
 
-Replace `USERNAME` with your GitHub username:
-
 ```bash
-git remote add origin https://github.com/USERNAME/grace-ai.git
+git remote add origin https://github.com/kit2925bad183/grace-ai.git
 git branch -M main
 git push -u origin main
 ```

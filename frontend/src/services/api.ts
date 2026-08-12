@@ -18,7 +18,13 @@ export function setUnauthorizedHandler(handler: () => void): void {
 }
 
 export function getApiOrigin(): string {
-  return API_BASE_URL.replace(/\/api\/?$/, '');
+  const explicit = import.meta.env.VITE_API_ORIGIN?.trim();
+  if (explicit) return explicit.replace(/\/$/, '');
+
+  const base = API_BASE_URL.replace(/\/api\/?$/, '');
+  if (base.startsWith('http')) return base;
+
+  return import.meta.env.DEV ? 'http://localhost:5000' : '';
 }
 
 function getFriendlyErrorMessage(status: number | undefined, serverMessage?: string): string {
@@ -91,12 +97,25 @@ api.interceptors.response.use(
 );
 
 export async function checkHealth(): Promise<HealthData> {
-  const response = await api.get<ApiResponse<HealthData>>('/health', {
+  const response = await api.get<ApiResponse<HealthData> & HealthData>('/health', {
     validateStatus: (status) => status === 200 || status === 503,
   });
 
-  if (response.data.data) {
-    return response.data.data;
+  const body = response.data;
+
+  if (body.status && body.database) {
+    return {
+      status: body.status === 'healthy' ? 'ok' : body.status,
+      service: body.service,
+      database: body.database,
+      version: body.version,
+      environment: body.environment,
+      timestamp: body.timestamp,
+    };
+  }
+
+  if (body.data) {
+    return body.data;
   }
 
   throw new Error('Health check failed');

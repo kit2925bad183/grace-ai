@@ -24,7 +24,8 @@ describe('Auth API', () => {
     if (!process.env.MONGODB_URI) {
       process.env.MONGODB_URI = 'mongodb://127.0.0.1:27017/grace-ai-test';
     }
-    await connectDatabase();
+    const ok = await connectDatabase();
+    if (!ok) throw new Error('Test database connection failed');
   });
 
   afterAll(async () => {

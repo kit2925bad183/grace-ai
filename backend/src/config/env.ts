@@ -16,23 +16,26 @@ export interface MongoConfig {
 }
 
 export function getMongoConfig(): MongoConfig {
+  const uri = process.env.MONGODB_URI?.trim();
+  if (uri) {
+    return { uri };
+  }
+
   const user = process.env.MONGODB_USER?.trim();
   const pass = process.env.MONGODB_PASSWORD;
-  const host = process.env.MONGODB_HOST?.trim() || 'cluster0.pypizlm.mongodb.net';
+  const host = process.env.MONGODB_HOST?.trim();
   const dbName = process.env.MONGODB_DB?.trim() || 'grace-ai';
 
-  if (user && pass) {
+  if (user && pass && host) {
     return {
-      uri: `mongodb+srv://${host}/${dbName}?retryWrites=true&w=majority&appName=Cluster0`,
+      uri: `mongodb+srv://${host}/${dbName}?retryWrites=true&w=majority`,
       user,
       pass,
       dbName,
     };
   }
 
-  return {
-    uri: process.env.MONGODB_URI ?? '',
-  };
+  return { uri: '' };
 }
 
 export const env = {
@@ -53,10 +56,32 @@ export const env = {
   isProduction: process.env.NODE_ENV === 'production',
 };
 
-export function getCorsOrigins(): string | string[] {
+export function getCorsOrigins(): string[] {
+  const origins = new Set<string>();
   const raw = env.clientUrl.trim();
-  if (!raw.includes(',')) return raw;
-  return raw.split(',').map((origin) => origin.trim()).filter(Boolean);
+
+  if (raw.includes(',')) {
+    raw.split(',').forEach((origin) => {
+      const trimmed = origin.trim();
+      if (trimmed) origins.add(trimmed);
+    });
+  } else if (raw) {
+    origins.add(raw);
+  }
+
+  origins.add('http://localhost:5173');
+  origins.add('http://127.0.0.1:5173');
+
+  return Array.from(origins);
+}
+
+/** Primary frontend URL for OAuth redirects (prefers non-localhost). */
+export function getPrimaryClientUrl(): string {
+  const origins = getCorsOrigins();
+  const production = origins.find(
+    (origin) => !origin.includes('localhost') && !origin.includes('127.0.0.1')
+  );
+  return production ?? origins[0] ?? 'http://localhost:5173';
 }
 
 export function isGoogleOAuthConfigured(): boolean {
