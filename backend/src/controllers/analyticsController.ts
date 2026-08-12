@@ -13,15 +13,54 @@ import {
 } from '../services/analyticsService';
 import { getSlaMonitoringList } from '../services/slaService';
 import { parseAnalyticsFilters } from '../utils/analyticsFilters';
+import type { AccessContext } from '../utils/accessControl';
+import { UserRole } from '../models/enums';
 
 function getFilters(req: Request) {
-  return parseAnalyticsFilters(req.query as Record<string, unknown>);
+  const base = parseAnalyticsFilters(req.query as Record<string, unknown>);
+  if (req.user?.role === UserRole.DEPARTMENT && req.user.departmentId) {
+    return { ...base, department: req.user.departmentId };
+  }
+  return base;
 }
 
-export async function authorityOverview(_req: Request, res: Response, next: NextFunction) {
+function accessFromReq(req: Request): AccessContext | undefined {
+  if (!req.user) return undefined;
+  if (req.user.role === UserRole.DEPARTMENT) {
+    return {
+      id: req.user.id,
+      role: req.user.role,
+      departmentId: req.user.departmentId,
+    };
+  }
+  return undefined;
+}
+
+export async function authorityOverview(req: Request, res: Response, next: NextFunction) {
+  try {
+    const data = await getAuthorityOverview(accessFromReq(req));
+    res.json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/** Public aggregate governance metrics for the landing page (no auth). */
+export async function publicGovernanceStats(_req: Request, res: Response, next: NextFunction) {
   try {
     const data = await getAuthorityOverview();
-    res.json({ success: true, data });
+    res.json({
+      success: true,
+      data: {
+        totalGrievances: data.totalGrievances,
+        resolved: data.resolved,
+        inProgress: data.inProgress,
+        slaCompliance: data.slaCompliance,
+        slaAtRisk: data.slaAtRisk,
+        averageResolutionTime: data.averageResolutionTime,
+        duplicateComplaints: data.duplicateComplaints,
+      },
+    });
   } catch (error) {
     next(error);
   }
@@ -110,9 +149,13 @@ export async function analyticsPolicyImpact(_req: Request, res: Response, next: 
 
 export async function slaMonitoring(req: Request, res: Response, next: NextFunction) {
   try {
+    const department =
+      req.user?.role === UserRole.DEPARTMENT
+        ? req.user.departmentId
+        : (req.query.department as string | undefined);
     const data = await getSlaMonitoringList({
       riskLevel: req.query.riskLevel as string | undefined,
-      department: req.query.department as string | undefined,
+      department,
       ward: req.query.ward as string | undefined,
       status: req.query.status as string | undefined,
       search: req.query.search as string | undefined,

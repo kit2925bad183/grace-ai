@@ -30,14 +30,17 @@ export default function NotFoundPage() {
   );
 }
 
+import { usePortalPaths } from '@/utils/portalPaths';
+
 export function TrackComplaintPage() {
+  const paths = usePortalPaths();
   return (
     <div className="mx-auto max-w-lg space-y-6">
       <PageHeader
         title="Track Complaint"
-        subtitle="Enter your grievance ID to view status and timeline"
+        subtitle="Enter your complaint ID to view status and timeline"
         breadcrumbs={[
-          { label: 'Dashboard', to: '/citizen/dashboard' },
+          { label: 'Dashboard', to: paths.dashboard },
           { label: 'Track Complaint' },
         ]}
       />

@@ -10,7 +10,10 @@
     "build": "npm run build --prefix backend && npm run build --prefix frontend",
     "build:frontend": "npm run build --prefix frontend",
     "build:backend": "npm run build --prefix backend",
-    "seed": "npm run seed --prefix backend",
+    "seed": "npm run seed:demo --prefix backend",
+    "create-admin": "npm run create-admin --prefix backend",
+    "test": "npm run test --prefix backend",
+    "deploy:verify": "npm run build && npm run test",
     "install:all": "npm install && npm install --prefix frontend && npm install --prefix backend"
   },
   "devDependencies": {

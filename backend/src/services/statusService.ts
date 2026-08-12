@@ -1,16 +1,17 @@
 import { Types } from 'mongoose';
-import mongoose from 'mongoose';
 import { Grievance, GrievanceStatusHistory, SLAPrediction } from '../models';
 import {
   GrievanceStatus,
   NotificationType,
-  UserRole,
 } from '../models/enums';
 import { AppError } from '../middleware/errorHandler';
+import { assertCanManageGrievance, type AccessContext } from '../utils/accessControl';
+import { writeAuditLog } from './auditService';
 import { createNotification } from './notificationService';
 import { computeSlaPrediction } from '../ai/slaPredictionService';
+import { runInTransaction, sessionOptions } from '../utils/transaction';
 
-const AUTHORITY_ALLOWED_STATUSES: GrievanceStatus[] = [
+const MANAGE_ALLOWED_STATUSES: GrievanceStatus[] = [
   GrievanceStatus.ASSIGNED,
   GrievanceStatus.UNDER_REVIEW,
   GrievanceStatus.IN_PROGRESS,
@@ -80,38 +81,32 @@ export async function updateGrievanceStatus(params: {
   newStatus: GrievanceStatus;
   changedBy: string;
   comment?: string;
-  userRole: UserRole;
+  access: AccessContext;
 }) {
-  if (
-    params.userRole !== UserRole.AUTHORITY &&
-    params.userRole !== UserRole.ADMIN
-  ) {
-    throw new AppError('Insufficient permissions', 403);
-  }
-
-  if (!AUTHORITY_ALLOWED_STATUSES.includes(params.newStatus)) {
+  if (!MANAGE_ALLOWED_STATUSES.includes(params.newStatus)) {
     throw new AppError('Invalid status transition', 400);
   }
 
   const grievance = await findGrievance(params.identifier);
   if (!grievance) throw new AppError('Grievance not found', 404);
 
+  assertCanManageGrievance(grievance, params.access);
+
   const oldStatus = grievance.status;
   if (oldStatus === params.newStatus) {
     throw new AppError('Grievance is already in this status', 409);
   }
 
-  const session = await mongoose.startSession();
-  session.startTransaction();
+  return runInTransaction(async (session) => {
+    const opts = sessionOptions(session);
 
-  try {
     grievance.status = params.newStatus;
 
     if (params.newStatus === GrievanceStatus.RESOLVED) {
       grievance.resolvedAt = new Date();
     }
 
-    await grievance.save({ session });
+    await grievance.save(opts);
 
     await GrievanceStatusHistory.create(
       [
@@ -123,7 +118,7 @@ export async function updateGrievanceStatus(params: {
           comment: params.comment ?? `Status updated to ${params.newStatus}`,
         },
       ],
-      { session }
+      opts
     );
 
     const notif = getStatusNotificationMessage(grievance.grievanceId, params.newStatus);
@@ -140,7 +135,7 @@ export async function updateGrievanceStatus(params: {
       if (sla) {
         sla.recommendation =
           'Escalate to senior officer and prioritize field inspection due to SLA risk.';
-        await sla.save({ session });
+        await sla.save(opts);
       }
     }
 
@@ -159,11 +154,18 @@ export async function updateGrievanceStatus(params: {
         sla.riskLevel = updated.riskLevel;
         sla.riskPercentage = updated.riskPercentage;
         sla.remainingHours = updated.remainingHours;
-        await sla.save({ session });
+        await sla.save(opts);
       }
     }
 
-    await session.commitTransaction();
+    await writeAuditLog({
+      userId: params.changedBy,
+      action: 'GRIEVANCE_STATUS_UPDATE',
+      resourceType: 'Grievance',
+      resourceId: grievance.grievanceId,
+      oldValue: { status: oldStatus },
+      newValue: { status: params.newStatus },
+    });
 
     return Grievance.findById(grievance._id)
       .populate([
@@ -177,12 +179,7 @@ export async function updateGrievanceStatus(params: {
         },
       ])
       .lean();
-  } catch (error) {
-    await session.abortTransaction();
-    throw error;
-  } finally {
-    session.endSession();
-  }
+  });
 }
 
-export { AUTHORITY_ALLOWED_STATUSES };
+export { MANAGE_ALLOWED_STATUSES };

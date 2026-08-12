@@ -6,14 +6,14 @@ import { updateDuplicateSchema } from '../validators/authorityValidators';
 import { listDuplicates, updateDuplicate } from '../controllers/duplicateController';
 
 const router = Router();
-const authorityRoles = [UserRole.AUTHORITY, UserRole.ADMIN];
+const manageRoles = [UserRole.DEPARTMENT, UserRole.HEAD_OF_DEPARTMENTS, UserRole.ADMIN];
 
-router.get('/', authenticate, authorize(...authorityRoles), listDuplicates);
+router.get('/', authenticate, authorize(...manageRoles), listDuplicates);
 
 router.patch(
   '/:id',
   authenticate,
-  authorize(...authorityRoles),
+  authorize(...manageRoles),
   validateBody(updateDuplicateSchema),
   updateDuplicate
 );

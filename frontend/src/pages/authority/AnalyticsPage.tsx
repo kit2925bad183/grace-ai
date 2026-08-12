@@ -192,7 +192,7 @@ export default function AnalyticsPage() {
         <div>
           <h1 className="text-2xl font-bold text-navy-900">Analytics Intelligence</h1>
           <p className="mt-1 text-sm text-navy-500">
-            MongoDB aggregation · Rule-Based AI Demo · Prototype Forecast
+            Live analytics from MongoDB — trends, performance, SLA, and governance intelligence
           </p>
         </div>
         <button onClick={loadAll} className="btn-secondary inline-flex items-center gap-2 text-sm">
@@ -472,7 +472,7 @@ export default function AnalyticsPage() {
       {(activeSection === 'Overview' || activeSection === 'Root Causes') && (
         <section>
           <h2 className="mb-2 text-lg font-semibold text-navy-900">Root Cause Intelligence</h2>
-          <p className="mb-4 text-xs text-grace-cyan">Rule-Based AI Insight · AI-Generated Demo Insight</p>
+          <p className="mb-4 text-xs text-grace-cyan">Root cause intelligence from complaint patterns</p>
           {!rootCauses.length ? (
             <EmptyChart message="No significant category-ward patterns detected." />
           ) : (
@@ -498,12 +498,12 @@ export default function AnalyticsPage() {
 
       {(activeSection === 'Overview' || activeSection === 'Forecast') && (
         <section>
-          <h2 className="mb-2 text-lg font-semibold text-navy-900">Prototype Forecast</h2>
+          <h2 className="mb-2 text-lg font-semibold text-navy-900">Complaint Forecast</h2>
           <p className="mb-4 text-xs text-navy-500">
-            Method: {forecast?.method ?? 'MOVING_AVERAGE_DEMO'} · Prototype Forecast
+            Historical trends and projected volumes
           </p>
           {!forecast?.historical.length ? (
-            <EmptyChart message="Insufficient historical data for reliable prototype forecast." />
+            <EmptyChart message="Insufficient historical data for forecast." />
           ) : (
             <ResponsiveContainer width="100%" height={300}>
               <AreaChart data={forecastChartData}>
@@ -523,7 +523,7 @@ export default function AnalyticsPage() {
       {(activeSection === 'Overview' || activeSection === 'Recommendations') && (
         <section>
           <h2 className="mb-2 text-lg font-semibold text-navy-900">AI Governance Recommendations</h2>
-          <p className="mb-4 text-xs text-grace-cyan">AI-Generated Demo Recommendation</p>
+          <p className="mb-4 text-xs text-grace-cyan">AI governance recommendations</p>
           {loading && !recommendations.length ? (
             <RecommendationSkeleton />
           ) : !recommendations.length ? (
@@ -553,7 +553,7 @@ export default function AnalyticsPage() {
       {(activeSection === 'Overview' || activeSection === 'Policy Impact') && (
         <section>
           <h2 className="mb-2 text-lg font-semibold text-navy-900">Policy Impact Analysis</h2>
-          <p className="mb-4 text-xs text-navy-500">Seeded Policy Example · from MongoDB PolicyImpact records</p>
+          <p className="mb-4 text-xs text-navy-500">Policy impact analysis from governance records</p>
           {!policies.length ? (
             <EmptyChart message="No policy impact records available." />
           ) : (

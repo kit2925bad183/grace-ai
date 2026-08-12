@@ -92,22 +92,19 @@ export function HotspotSkeleton() {
 
 export function AIAnalysisLoader({ step }: { step: number }) {
   const steps = [
-    'Analyzing complaint...',
-    'Identifying category...',
-    'Detecting keywords...',
-    'Checking duplicate complaints...',
-    'Finding responsible department...',
-    'Predicting SLA risk...',
-    'Generating recommendation...',
+    'Understanding your complaint...',
+    'Finding the right department...',
+    'Checking similar complaints...',
+    'Estimating resolution time...',
   ];
 
   return (
-    <div className="rounded-xl border border-grace-cyan/20 bg-gradient-to-br from-grace-cyan/5 to-grace-blue/5 p-6">
+    <div className="card-mint animate-fade-in">
       <div className="mb-4 flex items-center gap-3">
-        <div className="h-10 w-10 animate-spin rounded-full border-2 border-grace-cyan border-t-transparent" />
+        <div className="h-10 w-10 animate-spin rounded-full border-2 border-civic-primary border-t-transparent" aria-hidden="true" />
         <div>
-          <p className="font-semibold text-navy-900">GRACE AI Demo Analysis</p>
-          <p className="text-xs text-navy-500">Rule-Based AI Demo</p>
+          <p className="font-semibold text-civic-text">GRACE is analyzing...</p>
+          <p className="text-sm text-civic-muted">This only takes a moment</p>
         </div>
       </div>
       <div className="space-y-2">
@@ -115,11 +112,11 @@ export function AIAnalysisLoader({ step }: { step: number }) {
           <div
             key={label}
             className={`flex items-center gap-2 text-sm transition-opacity ${
-              i <= step ? 'text-navy-800 opacity-100' : 'text-navy-400 opacity-40'
+              i <= step ? 'text-civic-text opacity-100' : 'text-civic-muted opacity-40'
             }`}
           >
             <span
-              className={`h-2 w-2 rounded-full ${i <= step ? 'bg-grace-cyan' : 'bg-navy-200'}`}
+              className={`h-2 w-2 rounded-full ${i <= step ? 'bg-civic-primary' : 'bg-civic-border'}`}
             />
             {label}
           </div>

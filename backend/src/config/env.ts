@@ -8,12 +8,48 @@ function parsePort(value: string | undefined, fallback: number): number {
   return Number.isNaN(parsed) ? fallback : parsed;
 }
 
+export interface MongoConfig {
+  uri: string;
+  user?: string;
+  pass?: string;
+  dbName?: string;
+}
+
+export function getMongoConfig(): MongoConfig {
+  const user = process.env.MONGODB_USER?.trim();
+  const pass = process.env.MONGODB_PASSWORD;
+  const host = process.env.MONGODB_HOST?.trim() || 'cluster0.pypizlm.mongodb.net';
+  const dbName = process.env.MONGODB_DB?.trim() || 'grace-ai';
+
+  if (user && pass) {
+    return {
+      uri: `mongodb+srv://${host}/${dbName}?retryWrites=true&w=majority&appName=Cluster0`,
+      user,
+      pass,
+      dbName,
+    };
+  }
+
+  return {
+    uri: process.env.MONGODB_URI ?? '',
+  };
+}
+
 export const env = {
   nodeEnv: process.env.NODE_ENV ?? 'development',
   port: parsePort(process.env.PORT, 5000),
-  mongodbUri: process.env.MONGODB_URI ?? '',
+  mongodbUri: getMongoConfig().uri,
   jwtSecret: process.env.JWT_SECRET ?? 'development-secret-change-me',
+  jwtRefreshSecret:
+    process.env.JWT_REFRESH_SECRET ?? process.env.JWT_SECRET ?? 'development-refresh-secret',
   clientUrl: process.env.CLIENT_URL ?? 'http://localhost:5173',
+  googleClientId: process.env.GOOGLE_CLIENT_ID ?? '',
+  googleClientSecret: process.env.GOOGLE_CLIENT_SECRET ?? '',
+  googleCallbackUrl:
+    process.env.GOOGLE_CALLBACK_URL ?? 'http://localhost:5000/api/auth/google/callback',
+  emailProvider: process.env.EMAIL_PROVIDER ?? 'console',
+  emailFrom: process.env.EMAIL_FROM ?? 'noreply@grace-ai.local',
+  emailApiKey: process.env.EMAIL_API_KEY ?? '',
   isProduction: process.env.NODE_ENV === 'production',
 };
 
@@ -23,11 +59,21 @@ export function getCorsOrigins(): string | string[] {
   return raw.split(',').map((origin) => origin.trim()).filter(Boolean);
 }
 
+export function isGoogleOAuthConfigured(): boolean {
+  // Requires client ID, secret, and callback URL in .env
+  return Boolean(env.googleClientId && env.googleClientSecret && env.googleCallbackUrl);
+}
+
 export function validateEnv(): void {
   const missing: string[] = [];
 
-  if (!env.mongodbUri) missing.push('MONGODB_URI');
+  const hasMongo =
+    Boolean(process.env.MONGODB_URI?.trim()) ||
+    Boolean(process.env.MONGODB_USER && process.env.MONGODB_PASSWORD);
+
+  if (!hasMongo) missing.push('MONGODB_URI or MONGODB_USER+MONGODB_PASSWORD');
   if (!process.env.JWT_SECRET) missing.push('JWT_SECRET');
+  if (!process.env.JWT_REFRESH_SECRET && env.isProduction) missing.push('JWT_REFRESH_SECRET');
   if (!process.env.CLIENT_URL) missing.push('CLIENT_URL');
 
   if (env.isProduction) {
@@ -43,6 +89,10 @@ export function validateEnv(): void {
       console.error('[config] JWT_SECRET must be a strong unique value in production.');
       process.exit(1);
     }
+
+    if (env.jwtRefreshSecret === env.jwtSecret) {
+      console.warn('[config] JWT_REFRESH_SECRET should differ from JWT_SECRET in production.');
+    }
   } else {
     if (!env.mongodbUri) {
       console.warn(
@@ -51,6 +101,9 @@ export function validateEnv(): void {
     }
     if (!process.env.JWT_SECRET) {
       console.warn('[config] JWT_SECRET not set — using development fallback.');
+    }
+    if (!process.env.JWT_REFRESH_SECRET) {
+      console.warn('[config] JWT_REFRESH_SECRET not set — using development fallback.');
     }
   }
 }

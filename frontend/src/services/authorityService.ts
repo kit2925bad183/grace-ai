@@ -1,5 +1,5 @@
 import api from './api';
-import type { ApiResponse } from '@/types';
+import type { ApiResponse, UserRole } from '@/types';
 import type {
   GrievanceSummary,
   GrievanceDetailResponse,
@@ -16,6 +16,15 @@ export interface AuthorityOverview {
   slaAtRisk: number;
   duplicateComplaints: number;
   averageResolutionTime: number;
+  attentionRequired?: {
+    criticalSla: number;
+    slaBreaches: number;
+    unassigned: number;
+    escalated: number;
+    duplicateClusters: number;
+    departmentsNeedingAttention: number;
+  };
+  attentionQueue?: GrievanceSummary[];
 }
 
 export interface PaginatedResponse<T> {
@@ -51,14 +60,38 @@ export interface SlaMonitoringItem extends SLAPrediction {
   grievanceId: GrievanceSummary;
 }
 
-export async function getAuthorityOverview(): Promise<AuthorityOverview> {
-  const res = await api.get<ApiResponse<AuthorityOverview>>('/analytics/authority-overview');
+function overviewPath(role?: UserRole): string {
+  if (role === 'DEPARTMENT') return '/analytics/department-overview';
+  if (role === 'ADMIN') return '/analytics/head-overview';
+  return '/analytics/head-overview';
+}
+
+function grievancesPath(role?: UserRole): string {
+  if (role === 'DEPARTMENT') return '/department/grievances';
+  return '/grievances';
+}
+
+export async function getAuthorityOverview(role?: UserRole): Promise<AuthorityOverview> {
+  const res = await api.get<ApiResponse<AuthorityOverview>>(overviewPath(role));
   if (!res.data.success || !res.data.data) throw new Error(res.data.message || 'Failed to load overview');
   return res.data.data;
 }
 
-export async function listGrievances(params: Record<string, string | number | undefined>): Promise<PaginatedResponse<GrievanceSummary>> {
-  const res = await api.get<ApiResponse<PaginatedResponse<GrievanceSummary>>>('/grievances', { params });
+export async function listMyWork(
+  params: Record<string, string | number | undefined>
+): Promise<PaginatedResponse<GrievanceSummary>> {
+  const res = await api.get<ApiResponse<PaginatedResponse<GrievanceSummary>>>('/department/my-work', { params });
+  if (!res.data.success || !res.data.data) throw new Error(res.data.message || 'Failed to load my work');
+  return res.data.data;
+}
+
+export async function listGrievances(
+  params: Record<string, string | number | undefined>,
+  role?: UserRole
+): Promise<PaginatedResponse<GrievanceSummary>> {
+  const res = await api.get<ApiResponse<PaginatedResponse<GrievanceSummary>>>(grievancesPath(role), {
+    params,
+  });
   if (!res.data.success || !res.data.data) throw new Error(res.data.message || 'Failed to load grievances');
   return res.data.data;
 }
@@ -99,11 +132,13 @@ export async function getSlaMonitoring(params: Record<string, string | number | 
   grouped: Record<string, number>;
   pagination: PaginatedResponse<SlaMonitoringItem>['pagination'];
 }> {
-  const res = await api.get<ApiResponse<{
-    items: SlaMonitoringItem[];
-    grouped: Record<string, number>;
-    pagination: PaginatedResponse<SlaMonitoringItem>['pagination'];
-  }>>('/analytics/sla-monitoring', { params });
+  const res = await api.get<
+    ApiResponse<{
+      items: SlaMonitoringItem[];
+      grouped: Record<string, number>;
+      pagination: PaginatedResponse<SlaMonitoringItem>['pagination'];
+    }>
+  >('/analytics/sla-monitoring', { params });
   if (!res.data.success || !res.data.data) throw new Error(res.data.message || 'Failed to load SLA data');
   return res.data.data;
 }

@@ -1,3 +1,9 @@
+export type UserRole = 'CITIZEN' | 'DEPARTMENT' | 'HEAD_OF_DEPARTMENTS' | 'ADMIN';
+
+export type UserStatus = 'ACTIVE' | 'SUSPENDED' | 'DISABLED' | 'PENDING';
+
+export type AuthProvider = 'LOCAL' | 'GOOGLE' | 'BOTH';
+
 export interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
@@ -13,20 +19,23 @@ export interface HealthData {
   database: string;
 }
 
-export type UserRole = 'CITIZEN' | 'AUTHORITY' | 'OFFICER' | 'ADMIN';
-
 export interface AuthUser {
   id: string;
   name: string;
   email: string;
   role: UserRole;
+  departmentId?: string;
+  departmentName?: string;
   phone?: string;
+  avatar?: string;
+  authProvider?: AuthProvider;
+  emailVerified?: boolean;
   createdAt?: string;
 }
 
-export interface AuthResponse {
-  token: string;
+export interface RegisterResult {
   user: AuthUser;
+  message: string;
 }
 
 export interface LoginCredentials {
@@ -41,6 +50,23 @@ export interface RegisterData {
   phone?: string;
 }
 
+export interface UpdateProfileData {
+  name?: string;
+  phone?: string;
+  avatar?: string;
+}
+
+export interface ChangePasswordData {
+  currentPassword: string;
+  newPassword: string;
+}
+
+/** @deprecated Session tokens are stored in HTTP-only cookies */
+export interface AuthResponse {
+  token: string;
+  user: AuthUser;
+}
+
 /** @deprecated Use AuthUser instead */
 export interface User {
   _id: string;
@@ -53,14 +79,21 @@ export interface User {
 export function getRoleDashboardPath(role: UserRole): string {
   switch (role) {
     case 'CITIZEN':
-      return '/citizen/dashboard';
-    case 'AUTHORITY':
-      return '/authority/dashboard';
-    case 'OFFICER':
-      return '/officer/dashboard';
+      return '/user/dashboard';
+    case 'DEPARTMENT':
+      return '/department/dashboard';
+    case 'HEAD_OF_DEPARTMENTS':
+      return '/head/dashboard';
     case 'ADMIN':
-      return '/admin/system-data';
+      return '/admin/dashboard';
     default:
       return '/login';
   }
 }
+
+export const ROLE_LABELS: Record<UserRole, string> = {
+  CITIZEN: 'Citizen',
+  DEPARTMENT: 'Department',
+  HEAD_OF_DEPARTMENTS: 'Head of Departments',
+  ADMIN: 'Platform Admin',
+};

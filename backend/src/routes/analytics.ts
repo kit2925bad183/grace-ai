@@ -1,53 +1,160 @@
 import { Router } from 'express';
+
 import { authenticate, authorize } from '../middleware/authMiddleware';
+
 import { UserRole } from '../models/enums';
+
 import { getCitizenOverview } from '../controllers/grievanceController';
+
 import {
+
   authorityOverview,
+
   slaMonitoring,
+
   analyticsOverview,
+
   analyticsTrends,
+
   analyticsDepartments,
+
   analyticsCategories,
+
   analyticsSla,
+
   analyticsHotspots,
+
   analyticsForecast,
+
   analyticsRootCauses,
+
   analyticsPolicyImpact,
+
+  publicGovernanceStats,
+
 } from '../controllers/analyticsController';
 
+
+
 const router = Router();
-const authorityRoles = [UserRole.AUTHORITY, UserRole.ADMIN];
+
+const manageRoles = [UserRole.DEPARTMENT, UserRole.HEAD_OF_DEPARTMENTS, UserRole.ADMIN];
+
+
+
+router.get('/public-stats', publicGovernanceStats);
+
+
 
 router.get(
-  '/citizen-overview',
+
+  '/user-overview',
+
   authenticate,
+
   authorize(UserRole.CITIZEN),
+
   getCitizenOverview
+
 );
 
+
+
+/** @deprecated use /user-overview */
+
 router.get(
-  '/authority-overview',
+
+  '/citizen-overview',
+
   authenticate,
-  authorize(...authorityRoles),
+
+  authorize(UserRole.CITIZEN),
+
+  getCitizenOverview
+
+);
+
+
+
+router.get(
+
+  '/department-overview',
+
+  authenticate,
+
+  authorize(UserRole.DEPARTMENT),
+
   authorityOverview
+
 );
+
+
+
+/** @deprecated use /department-overview or /head-overview */
 
 router.get(
-  '/sla-monitoring',
+
+  '/authority-overview',
+
   authenticate,
-  authorize(...authorityRoles),
-  slaMonitoring
+
+  authorize(UserRole.HEAD_OF_DEPARTMENTS, UserRole.ADMIN),
+
+  authorityOverview
+
 );
 
-router.get('/overview', authenticate, authorize(...authorityRoles), analyticsOverview);
-router.get('/trends', authenticate, authorize(...authorityRoles), analyticsTrends);
-router.get('/departments', authenticate, authorize(...authorityRoles), analyticsDepartments);
-router.get('/categories', authenticate, authorize(...authorityRoles), analyticsCategories);
-router.get('/sla', authenticate, authorize(...authorityRoles), analyticsSla);
-router.get('/hotspots', authenticate, authorize(...authorityRoles), analyticsHotspots);
-router.get('/forecast', authenticate, authorize(...authorityRoles), analyticsForecast);
-router.get('/root-causes', authenticate, authorize(...authorityRoles), analyticsRootCauses);
-router.get('/policy-impact', authenticate, authorize(...authorityRoles), analyticsPolicyImpact);
+
+
+router.get(
+
+  '/head-overview',
+
+  authenticate,
+
+  authorize(UserRole.HEAD_OF_DEPARTMENTS, UserRole.ADMIN),
+
+  authorityOverview
+
+);
+
+
+
+router.get(
+
+  '/department',
+
+  authenticate,
+
+  authorize(UserRole.DEPARTMENT),
+
+  analyticsOverview
+
+);
+
+
+
+router.get('/sla-monitoring', authenticate, authorize(...manageRoles), slaMonitoring);
+
+router.get('/overview', authenticate, authorize(UserRole.HEAD_OF_DEPARTMENTS, UserRole.ADMIN), analyticsOverview);
+
+router.get('/trends', authenticate, authorize(...manageRoles), analyticsTrends);
+
+router.get('/departments', authenticate, authorize(UserRole.HEAD_OF_DEPARTMENTS, UserRole.ADMIN), analyticsDepartments);
+
+router.get('/categories', authenticate, authorize(...manageRoles), analyticsCategories);
+
+router.get('/sla', authenticate, authorize(...manageRoles), analyticsSla);
+
+router.get('/hotspots', authenticate, authorize(UserRole.HEAD_OF_DEPARTMENTS, UserRole.ADMIN), analyticsHotspots);
+
+router.get('/forecast', authenticate, authorize(UserRole.HEAD_OF_DEPARTMENTS, UserRole.ADMIN), analyticsForecast);
+
+router.get('/root-causes', authenticate, authorize(UserRole.HEAD_OF_DEPARTMENTS, UserRole.ADMIN), analyticsRootCauses);
+
+router.get('/policy-impact', authenticate, authorize(UserRole.HEAD_OF_DEPARTMENTS, UserRole.ADMIN), analyticsPolicyImpact);
+
+
 
 export default router;
+

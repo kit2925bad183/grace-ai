@@ -34,6 +34,7 @@ export interface UserSeed {
   email: string;
   role: string;
   phone: string;
+  departmentCode?: string;
 }
 
 export interface OfficerSeed {
@@ -131,11 +132,11 @@ export const WARDS: WardSeed[] = [
 
 export const USERS: UserSeed[] = [
   { name: 'Demo Citizen', email: 'citizen@grace.demo', role: 'CITIZEN', phone: '9876543210' },
-  { name: 'Demo Authority', email: 'authority@grace.demo', role: 'AUTHORITY', phone: '9876543211' },
-  { name: 'System Admin', email: 'admin@grace.demo', role: 'ADMIN', phone: '9876543212' },
-  { name: 'Rajesh Kumar', email: 'roads.officer@grace.demo', role: 'OFFICER', phone: '9876543213' },
-  { name: 'Priya Sharma', email: 'water.officer@grace.demo', role: 'OFFICER', phone: '9876543214' },
-  { name: 'Amit Patel', email: 'sanitation.officer@grace.demo', role: 'OFFICER', phone: '9876543215' },
+  { name: 'System Head', email: 'head@grace.demo', role: 'HEAD_OF_DEPARTMENTS', phone: '9876543211' },
+  { name: 'Roads Department', email: 'roads@grace.ai', role: 'DEPARTMENT', phone: '9876543213', departmentCode: 'ROADS' },
+  { name: 'Water Department', email: 'water@grace.ai', role: 'DEPARTMENT', phone: '9876543214', departmentCode: 'WATER' },
+  { name: 'Sanitation Department', email: 'sanitation@grace.ai', role: 'DEPARTMENT', phone: '9876543215', departmentCode: 'SANITATION' },
+  { name: 'Rajesh Kumar', email: 'roads.officer@grace.demo', role: 'DEPARTMENT', phone: '9876543220', departmentCode: 'ROADS' },
   { name: 'Anita Desai', email: 'anita.citizen@grace.demo', role: 'CITIZEN', phone: '9876543216' },
   { name: 'Ravi Menon', email: 'ravi.citizen@grace.demo', role: 'CITIZEN', phone: '9876543217' },
   { name: 'Sunita Rao', email: 'sunita.citizen@grace.demo', role: 'CITIZEN', phone: '9876543218' },
@@ -150,14 +151,21 @@ export const OFFICERS: OfficerSeed[] = [
     wardCodes: ['W07', 'W14', 'W21'],
   },
   {
-    email: 'water.officer@grace.demo',
+    email: 'roads@grace.ai',
+    departmentCode: 'ROADS',
+    employeeCode: 'OFF-ROADS-002',
+    designation: 'Roads Department Lead',
+    wardCodes: ['W07', 'W12'],
+  },
+  {
+    email: 'water@grace.ai',
     departmentCode: 'WATER',
     employeeCode: 'OFF-WATER-001',
     designation: 'Water Supply Officer',
     wardCodes: ['W07', 'W12', 'W18'],
   },
   {
-    email: 'sanitation.officer@grace.demo',
+    email: 'sanitation@grace.ai',
     departmentCode: 'SANITATION',
     employeeCode: 'OFF-SAN-001',
     designation: 'Sanitation Supervisor',

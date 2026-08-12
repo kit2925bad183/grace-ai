@@ -1,170 +1,94 @@
-import axios, { AxiosError } from 'axios';
-
+import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import type { ApiResponse, HealthData } from '@/types';
 
-
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-
-const TOKEN_KEY = 'grace_token';
-
-
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
 export const api = axios.create({
-
   baseURL: API_BASE_URL,
-
-  headers: {
-
-    'Content-Type': 'application/json',
-
-  },
-
+  headers: { 'Content-Type': 'application/json' },
   timeout: 15000,
-
+  withCredentials: true,
 });
-
-
 
 let unauthorizedHandler: (() => void) | null = null;
-
-
+let refreshPromise: Promise<boolean> | null = null;
 
 export function setUnauthorizedHandler(handler: () => void): void {
-
   unauthorizedHandler = handler;
-
 }
 
-
-
-export function getStoredToken(): string | null {
-
-  return localStorage.getItem(TOKEN_KEY);
-
+export function getApiOrigin(): string {
+  return API_BASE_URL.replace(/\/api\/?$/, '');
 }
-
-
-
-export function setStoredToken(token: string): void {
-
-  localStorage.setItem(TOKEN_KEY, token);
-
-}
-
-
-
-export function clearStoredToken(): void {
-
-  localStorage.removeItem(TOKEN_KEY);
-
-}
-
-
 
 function getFriendlyErrorMessage(status: number | undefined, serverMessage?: string): string {
-
   switch (status) {
-
     case 400:
-
       return serverMessage || 'Invalid request. Please check your input.';
-
     case 401:
-
       return serverMessage || 'Invalid credentials or session expired.';
-
     case 403:
-
-      return 'You do not have permission to perform this action.';
-
+      return serverMessage || 'You do not have permission to perform this action.';
     case 404:
-
       return serverMessage || 'The requested resource was not found.';
-
     case 409:
-
       return serverMessage || 'This action conflicts with the current state.';
-
     case 429:
-
-      return 'Too many requests. Please wait and try again.';
-
+      return serverMessage || 'Too many requests. Please wait and try again.';
     case 500:
-
     case 502:
-
     case 503:
-
       return 'Unable to process request. Please try again later.';
-
     default:
-
       if (!status) return 'Server unavailable. Please check your connection.';
-
       return serverMessage || 'An unexpected error occurred.';
-
   }
-
 }
 
-
-
-api.interceptors.request.use((config) => {
-
-  const token = getStoredToken();
-
-  if (token) {
-
-    config.headers.Authorization = `Bearer ${token}`;
-
+async function tryRefreshSession(): Promise<boolean> {
+  if (!refreshPromise) {
+    refreshPromise = api
+      .post('/auth/refresh')
+      .then(() => true)
+      .catch(() => false)
+      .finally(() => {
+        refreshPromise = null;
+      });
   }
-
-  return config;
-
-});
-
-
+  return refreshPromise;
+}
 
 api.interceptors.response.use(
-
   (response) => response,
-
-  (error: AxiosError<ApiResponse>) => {
-
+  async (error: AxiosError<ApiResponse>) => {
+    const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
     const status = error.response?.status;
-
     const serverMessage = error.response?.data?.message;
+    const isAuthEndpoint =
+      originalRequest?.url?.includes('/auth/login') ||
+      originalRequest?.url?.includes('/auth/register') ||
+      originalRequest?.url?.includes('/auth/refresh');
 
-    const message = getFriendlyErrorMessage(status, serverMessage);
-
-
-
-    if (status === 401 && unauthorizedHandler) {
-
-      const isAuthEndpoint = error.config?.url?.includes('/auth/login');
-
-      if (!isAuthEndpoint) {
-
-        unauthorizedHandler();
-
+    if (
+      status === 401 &&
+      originalRequest &&
+      !originalRequest._retry &&
+      !isAuthEndpoint
+    ) {
+      originalRequest._retry = true;
+      const refreshed = await tryRefreshSession();
+      if (refreshed) {
+        return api(originalRequest);
       }
-
+      unauthorizedHandler?.();
     }
 
-
-
+    const message = getFriendlyErrorMessage(status, serverMessage);
     const err = new Error(message) as Error & { status?: number };
-
     err.status = status;
-
     return Promise.reject(err);
-
   }
-
 );
-
-
 
 export async function checkHealth(): Promise<HealthData> {
   const response = await api.get<ApiResponse<HealthData>>('/health', {
@@ -178,7 +102,4 @@ export async function checkHealth(): Promise<HealthData> {
   throw new Error('Health check failed');
 }
 
-
-
 export default api;
-

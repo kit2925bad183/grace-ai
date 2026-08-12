@@ -3,6 +3,16 @@ import * as grievanceService from '../services/grievanceService';
 import { updateGrievanceStatus } from '../services/statusService';
 import { assignOfficer } from '../services/assignmentService';
 import { UserRole, GrievanceStatus } from '../models/enums';
+import { paramAsString } from '../utils/params';
+import type { AccessContext } from '../utils/accessControl';
+
+function accessFromReq(req: Request): AccessContext {
+  return {
+    id: req.user!.id,
+    role: req.user!.role as UserRole,
+    departmentId: req.user!.departmentId,
+  };
+}
 
 export async function getCategories(_req: Request, res: Response, next: NextFunction) {
   try {
@@ -56,6 +66,8 @@ export async function getMyGrievances(req: Request, res: Response, next: NextFun
       status: req.query.status as string | undefined,
       priority: req.query.priority as string | undefined,
       categoryId: req.query.categoryId as string | undefined,
+      page: req.query.page ? parseInt(req.query.page as string, 10) : undefined,
+      limit: req.query.limit ? parseInt(req.query.limit as string, 10) : undefined,
     });
     res.json({ success: true, data });
   } catch (error) {
@@ -65,10 +77,12 @@ export async function getMyGrievances(req: Request, res: Response, next: NextFun
 
 export async function getGrievanceById(req: Request, res: Response, next: NextFunction) {
   try {
+    const access = accessFromReq(req);
     const data = await grievanceService.getGrievanceDetails(
-      req.params.id,
-      req.user!.id,
-      req.user!.role as UserRole
+      paramAsString(req.params.id),
+      access.id,
+      access.role,
+      access.departmentId
     );
     res.json({ success: true, data });
   } catch (error) {
@@ -78,10 +92,12 @@ export async function getGrievanceById(req: Request, res: Response, next: NextFu
 
 export async function getTimeline(req: Request, res: Response, next: NextFunction) {
   try {
+    const access = accessFromReq(req);
     const data = await grievanceService.getGrievanceTimeline(
-      req.params.id,
-      req.user!.id,
-      req.user!.role as UserRole
+      paramAsString(req.params.id),
+      access.id,
+      access.role,
+      access.departmentId
     );
     res.json({ success: true, data });
   } catch (error) {
@@ -91,10 +107,12 @@ export async function getTimeline(req: Request, res: Response, next: NextFunctio
 
 export async function getSla(req: Request, res: Response, next: NextFunction) {
   try {
+    const access = accessFromReq(req);
     const data = await grievanceService.getGrievanceSla(
-      req.params.id,
-      req.user!.id,
-      req.user!.role as UserRole
+      paramAsString(req.params.id),
+      access.id,
+      access.role,
+      access.departmentId
     );
     res.json({ success: true, data });
   } catch (error) {
@@ -104,10 +122,12 @@ export async function getSla(req: Request, res: Response, next: NextFunction) {
 
 export async function getDuplicates(req: Request, res: Response, next: NextFunction) {
   try {
+    const access = accessFromReq(req);
     const data = await grievanceService.getGrievanceDuplicates(
-      req.params.id,
-      req.user!.id,
-      req.user!.role as UserRole
+      paramAsString(req.params.id),
+      access.id,
+      access.role,
+      access.departmentId
     );
     res.json({ success: true, data });
   } catch (error) {
@@ -117,18 +137,21 @@ export async function getDuplicates(req: Request, res: Response, next: NextFunct
 
 export async function listGrievances(req: Request, res: Response, next: NextFunction) {
   try {
-    const data = await grievanceService.listGrievances({
-      department: req.query.department as string | undefined,
-      category: req.query.category as string | undefined,
-      priority: req.query.priority as string | undefined,
-      status: req.query.status as string | undefined,
-      slaRisk: req.query.slaRisk as string | undefined,
-      ward: req.query.ward as string | undefined,
-      search: req.query.search as string | undefined,
-      page: req.query.page ? parseInt(req.query.page as string, 10) : undefined,
-      limit: req.query.limit ? parseInt(req.query.limit as string, 10) : undefined,
-      sort: req.query.sort as string | undefined,
-    });
+    const data = await grievanceService.listGrievances(
+      {
+        department: req.query.department as string | undefined,
+        category: req.query.category as string | undefined,
+        priority: req.query.priority as string | undefined,
+        status: req.query.status as string | undefined,
+        slaRisk: req.query.slaRisk as string | undefined,
+        ward: req.query.ward as string | undefined,
+        search: req.query.search as string | undefined,
+        page: req.query.page ? parseInt(req.query.page as string, 10) : undefined,
+        limit: req.query.limit ? parseInt(req.query.limit as string, 10) : undefined,
+        sort: req.query.sort as string | undefined,
+      },
+      accessFromReq(req)
+    );
     res.json({ success: true, data });
   } catch (error) {
     next(error);
@@ -138,11 +161,11 @@ export async function listGrievances(req: Request, res: Response, next: NextFunc
 export async function updateStatus(req: Request, res: Response, next: NextFunction) {
   try {
     const data = await updateGrievanceStatus({
-      identifier: req.params.id,
+      identifier: paramAsString(req.params.id),
       newStatus: req.body.status as GrievanceStatus,
       changedBy: req.user!.id,
       comment: req.body.comment,
-      userRole: req.user!.role as UserRole,
+      access: accessFromReq(req),
     });
     res.json({ success: true, data });
   } catch (error) {
@@ -153,11 +176,11 @@ export async function updateStatus(req: Request, res: Response, next: NextFuncti
 export async function assignOfficerHandler(req: Request, res: Response, next: NextFunction) {
   try {
     const data = await assignOfficer({
-      identifier: req.params.id,
+      identifier: paramAsString(req.params.id),
       officerId: req.body.officerId,
       changedBy: req.user!.id,
       comment: req.body.comment,
-      userRole: req.user!.role as UserRole,
+      access: accessFromReq(req),
     });
     res.json({ success: true, data });
   } catch (error) {

@@ -1,5 +1,4 @@
 import { Types } from 'mongoose';
-import mongoose from 'mongoose';
 import {
   Grievance,
   ComplaintCategory,
@@ -19,11 +18,15 @@ import {
   UserRole,
 } from '../models/enums';
 import { AppError } from '../middleware/errorHandler';
+import { assertGrievanceAccess, resolveDepartmentScope, type AccessContext } from '../utils/accessControl';
 import { classifyComplaint } from '../ai/classificationService';
 import { computeSlaPrediction } from '../ai/slaPredictionService';
 import { detectDuplicates } from '../ai/duplicateDetectionService';
 import { generateGrievanceId } from '../utils/grievanceId';
+import { runInTransaction, sessionOptions } from '../utils/transaction';
 import { getSlaDeadline } from '../utils/slaUtils';
+import { escapeRegex } from '../utils/regex';
+import { sortByWorkPriority } from '../utils/workPriority';
 import { createNotification } from './notificationService';
 
 const POPULATE_FIELDS = [
@@ -60,30 +63,8 @@ async function findGrievanceByIdentifier(identifier: string) {
   return null;
 }
 
-function assertGrievanceAccess(
-  grievance: { citizenId: Types.ObjectId },
-  userId: string,
-  userRole: UserRole
-): void {
-  if (
-    userRole === UserRole.AUTHORITY ||
-    userRole === UserRole.ADMIN ||
-    userRole === UserRole.OFFICER
-  ) {
-    return;
-  }
-  if (userRole === UserRole.CITIZEN && !grievance.citizenId.equals(userId)) {
-    throw new AppError('You do not have permission to view this complaint', 403);
-  }
-}
-
-/** @deprecated use assertGrievanceAccess */
-function assertCitizenOwnership(
-  grievance: { citizenId: Types.ObjectId },
-  userId: string,
-  userRole: UserRole
-): void {
-  assertGrievanceAccess(grievance, userId, userRole);
+function toAccessContext(userId: string, userRole: UserRole, departmentId?: string): AccessContext {
+  return { id: userId, role: userRole, departmentId };
 }
 
 export async function getCategories() {
@@ -157,10 +138,8 @@ export async function createGrievance(citizenId: string, input: CreateGrievanceI
   const slaDeadline = getSlaDeadline(input.priority, now);
   const sla = computeSlaPrediction(input.priority, now, slaDeadline, GrievanceStatus.AI_ANALYZED);
 
-  const session = await mongoose.startSession();
-  session.startTransaction();
-
-  try {
+  return runInTransaction(async (session) => {
+    const opts = sessionOptions(session);
     const grievanceId = await generateGrievanceId();
 
     const [grievance] = await Grievance.create(
@@ -179,7 +158,7 @@ export async function createGrievance(citizenId: string, input: CreateGrievanceI
           slaDeadline,
         },
       ],
-      { session }
+      opts
     );
 
     await GrievanceStatusHistory.create(
@@ -200,7 +179,7 @@ export async function createGrievance(citizenId: string, input: CreateGrievanceI
           createdAt: new Date(now.getTime() + 1000),
         },
       ],
-      { session }
+      opts
     );
 
     await AIAnalysis.create(
@@ -219,7 +198,7 @@ export async function createGrievance(citizenId: string, input: CreateGrievanceI
           analysisMethod: AnalysisMethod.RULE_BASED_DEMO,
         },
       ],
-      { session }
+      opts
     );
 
     await SLAPrediction.create(
@@ -234,7 +213,7 @@ export async function createGrievance(citizenId: string, input: CreateGrievanceI
           recommendation: sla.recommendation,
         },
       ],
-      { session }
+      opts
     );
 
     const duplicates = await detectDuplicates({
@@ -255,7 +234,7 @@ export async function createGrievance(citizenId: string, input: CreateGrievanceI
           reason: d.reason,
           status: DuplicateMatchStatus.POTENTIAL,
         })),
-        { session }
+        opts
       );
     }
 
@@ -267,8 +246,6 @@ export async function createGrievance(citizenId: string, input: CreateGrievanceI
       session,
     });
 
-    await session.commitTransaction();
-
     const populated = await Grievance.findById(grievance._id).populate(POPULATE_FIELDS).lean();
     const aiAnalysis = await AIAnalysis.findOne({ grievanceId: grievance._id }).lean();
     const slaPrediction = await SLAPrediction.findOne({ grievanceId: grievance._id }).lean();
@@ -279,15 +256,17 @@ export async function createGrievance(citizenId: string, input: CreateGrievanceI
       slaPrediction,
       duplicates,
     };
-  } catch (error) {
-    await session.abortTransaction();
-    throw error;
-  } finally {
-    session.endSession();
-  }
+  });
 }
 
-export async function getCitizenOverview(citizenId: string) {
+export async function getCitizenOverview(citizenId: string): Promise<{
+  total: number;
+  inProgress: number;
+  resolved: number;
+  slaAtRisk: number;
+  recent: unknown[];
+  grievances: unknown[];
+}> {
   const grievances = await Grievance.find({ citizenId })
     .populate(POPULATE_FIELDS)
     .sort({ createdAt: -1 })
@@ -341,8 +320,14 @@ export async function getMyGrievances(
     status?: string;
     priority?: string;
     categoryId?: string;
+    page?: number;
+    limit?: number;
   }
-) {
+): Promise<{ items: unknown[]; pagination: { page: number; limit: number; total: number; totalPages: number } }> {
+  const page = Math.max(1, filters.page ?? 1);
+  const limit = Math.min(100, Math.max(1, filters.limit ?? 20));
+  const skip = (page - 1) * limit;
+
   const query: Record<string, unknown> = { citizenId };
 
   if (filters.status) query.status = filters.status;
@@ -350,17 +335,23 @@ export async function getMyGrievances(
   if (filters.categoryId) query.categoryId = filters.categoryId;
 
   if (filters.search) {
+    const safe = escapeRegex(filters.search.trim());
     query.$or = [
-      { grievanceId: { $regex: filters.search, $options: 'i' } },
-      { title: { $regex: filters.search, $options: 'i' } },
-      { location: { $regex: filters.search, $options: 'i' } },
+      { grievanceId: { $regex: safe, $options: 'i' } },
+      { title: { $regex: safe, $options: 'i' } },
+      { location: { $regex: safe, $options: 'i' } },
     ];
   }
 
-  const grievances = await Grievance.find(query)
-    .populate(POPULATE_FIELDS)
-    .sort({ createdAt: -1 })
-    .lean();
+  const [grievances, total] = await Promise.all([
+    Grievance.find(query)
+      .populate(POPULATE_FIELDS)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean(),
+    Grievance.countDocuments(query),
+  ]);
 
   const grievanceIds = grievances.map((g) => g._id);
   const slaPredictions = await SLAPrediction.find({
@@ -368,42 +359,59 @@ export async function getMyGrievances(
   }).lean();
   const slaMap = new Map(slaPredictions.map((s) => [s.grievanceId.toString(), s]));
 
-  return grievances.map((g) => ({
+  const items = grievances.map((g) => ({
     ...g,
     slaRisk: slaMap.get(g._id.toString())?.riskLevel ?? null,
     slaRiskPercentage: slaMap.get(g._id.toString())?.riskPercentage ?? null,
   }));
+
+  return {
+    items,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit) || 1,
+    },
+  };
 }
 
-export async function listGrievances(filters: {
-  department?: string;
-  category?: string;
-  priority?: string;
-  status?: string;
-  slaRisk?: string;
-  ward?: string;
-  search?: string;
-  page?: number;
-  limit?: number;
-  sort?: string;
-}) {
+export async function listGrievances(
+  filters: {
+    department?: string;
+    category?: string;
+    priority?: string;
+    status?: string;
+    slaRisk?: string;
+    ward?: string;
+    search?: string;
+    page?: number;
+    limit?: number;
+    sort?: string;
+    assignedOfficerId?: string;
+  },
+  access?: AccessContext
+): Promise<{ items: unknown[]; pagination: { page: number; limit: number; total: number; totalPages: number } }> {
   const page = Math.max(1, filters.page ?? 1);
   const limit = Math.min(100, Math.max(1, filters.limit ?? 20));
   const skip = (page - 1) * limit;
 
   const query: Record<string, unknown> = {};
 
-  if (filters.department) query.departmentId = filters.department;
+  const scopedDepartment = access ? resolveDepartmentScope(access, filters.department) : filters.department;
+  if (scopedDepartment) query.departmentId = scopedDepartment;
   if (filters.category) query.categoryId = filters.category;
   if (filters.priority) query.priority = filters.priority;
   if (filters.status) query.status = filters.status;
   if (filters.ward) query.wardId = filters.ward;
+  if (filters.assignedOfficerId) query.assignedOfficerId = filters.assignedOfficerId;
 
   if (filters.search) {
+    const safe = escapeRegex(filters.search.trim());
     query.$or = [
-      { grievanceId: { $regex: filters.search, $options: 'i' } },
-      { title: { $regex: filters.search, $options: 'i' } },
-      { location: { $regex: filters.search, $options: 'i' } },
+      { grievanceId: { $regex: safe, $options: 'i' } },
+      { title: { $regex: safe, $options: 'i' } },
+      { location: { $regex: safe, $options: 'i' } },
     ];
   }
 
@@ -414,9 +422,39 @@ export async function listGrievances(filters: {
     query._id = { $in: slaGrievanceIds };
   }
 
+  const useSmartSort = filters.sort === 'smart' || (!filters.sort && access);
   let sortOption: Record<string, 1 | -1> = { createdAt: -1 };
   if (filters.sort === 'oldest') sortOption = { createdAt: 1 };
   if (filters.sort === 'priority') sortOption = { priority: -1, createdAt: -1 };
+
+  if (useSmartSort) {
+    const allGrievances = await Grievance.find(query).populate(POPULATE_FIELDS).lean();
+    const allIds = allGrievances.map((g) => g._id);
+    const allSla = await SLAPrediction.find({ grievanceId: { $in: allIds } }).lean();
+    const slaMap = new Map(allSla.map((s) => [s.grievanceId.toString(), s]));
+
+    const enriched = allGrievances.map((g) => {
+      const sla = slaMap.get(g._id.toString());
+      return {
+        ...g,
+        slaRisk: sla?.riskLevel ?? null,
+        slaRiskPercentage: sla?.riskPercentage ?? null,
+      };
+    });
+
+    const sorted = sortByWorkPriority(enriched);
+    const items = sorted.slice(skip, skip + limit);
+
+    return {
+      items,
+      pagination: {
+        page,
+        limit,
+        total: sorted.length,
+        totalPages: Math.ceil(sorted.length / limit) || 1,
+      },
+    };
+  }
 
   const [grievances, total] = await Promise.all([
     Grievance.find(query)
@@ -454,12 +492,13 @@ export async function listGrievances(filters: {
 export async function getGrievanceDetails(
   identifier: string,
   userId: string,
-  userRole: UserRole
+  userRole: UserRole,
+  departmentId?: string
 ) {
   const grievance = await findGrievanceByIdentifier(identifier);
   if (!grievance) throw new AppError('Grievance not found', 404);
 
-  assertGrievanceAccess(grievance, userId, userRole);
+  assertGrievanceAccess(grievance, toAccessContext(userId, userRole, departmentId));
 
   const populated = await Grievance.findById(grievance._id).populate(POPULATE_FIELDS).lean();
   const aiAnalysis = await AIAnalysis.findOne({ grievanceId: grievance._id }).lean();
@@ -477,12 +516,13 @@ export async function getGrievanceDetails(
 export async function getGrievanceTimeline(
   identifier: string,
   userId: string,
-  userRole: UserRole
+  userRole: UserRole,
+  departmentId?: string
 ) {
   const grievance = await findGrievanceByIdentifier(identifier);
   if (!grievance) throw new AppError('Grievance not found', 404);
 
-  assertGrievanceAccess(grievance, userId, userRole);
+  assertGrievanceAccess(grievance, toAccessContext(userId, userRole, departmentId));
 
   return GrievanceStatusHistory.find({ grievanceId: grievance._id })
     .populate('changedBy', 'name role')
@@ -493,12 +533,13 @@ export async function getGrievanceTimeline(
 export async function getGrievanceSla(
   identifier: string,
   userId: string,
-  userRole: UserRole
+  userRole: UserRole,
+  departmentId?: string
 ) {
   const grievance = await findGrievanceByIdentifier(identifier);
   if (!grievance) throw new AppError('Grievance not found', 404);
 
-  assertGrievanceAccess(grievance, userId, userRole);
+  assertGrievanceAccess(grievance, toAccessContext(userId, userRole, departmentId));
 
   const sla = await SLAPrediction.findOne({ grievanceId: grievance._id }).lean();
   if (!sla) throw new AppError('SLA prediction not found', 404);
@@ -509,12 +550,13 @@ export async function getGrievanceSla(
 export async function getGrievanceDuplicates(
   identifier: string,
   userId: string,
-  userRole: UserRole
+  userRole: UserRole,
+  departmentId?: string
 ) {
   const grievance = await findGrievanceByIdentifier(identifier);
   if (!grievance) throw new AppError('Grievance not found', 404);
 
-  assertGrievanceAccess(grievance, userId, userRole);
+  assertGrievanceAccess(grievance, toAccessContext(userId, userRole, departmentId));
 
   return DuplicateMatch.find({ grievanceId: grievance._id })
     .populate({

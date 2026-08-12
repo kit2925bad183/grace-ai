@@ -3,8 +3,10 @@ import { Link } from 'react-router-dom';
 import { getPolicyImpactAnalytics } from '@/services/analyticsService';
 import type { PolicyImpactItem } from '@/types/analytics';
 import { ChartSkeleton } from '@/components/skeletons/Skeletons';
+import { usePortalPaths } from '@/utils/portalPaths';
 
 export default function PolicyImpactPage() {
+  const paths = usePortalPaths();
   const [policies, setPolicies] = useState<PolicyImpactItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -23,9 +25,9 @@ export default function PolicyImpactPage() {
       <div>
         <h1 className="text-2xl font-bold text-navy-900">Policy Impact Analysis</h1>
         <p className="mt-1 text-sm text-navy-500">
-          Seeded Demo Policy Data · retrieved from MongoDB PolicyImpact records
+          Policy impact analysis from governance records
         </p>
-        <Link to="/authority/analytics" className="mt-2 inline-block text-sm text-grace-cyan hover:underline">
+        <Link to={paths.analytics} className="mt-2 inline-block text-sm text-grace-coffee hover:underline">
           View full analytics dashboard →
         </Link>
       </div>

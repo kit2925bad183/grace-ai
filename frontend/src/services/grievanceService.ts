@@ -48,8 +48,10 @@ export async function getMyGrievances(params?: {
   status?: string;
   priority?: string;
   categoryId?: string;
-}): Promise<GrievanceSummary[]> {
-  const res = await api.get<ApiResponse<GrievanceSummary[]>>('/grievances/my', { params });
+  page?: number;
+  limit?: number;
+}): Promise<{ items: GrievanceSummary[]; pagination: { page: number; limit: number; total: number; totalPages: number } }> {
+  const res = await api.get<ApiResponse<{ items: GrievanceSummary[]; pagination: { page: number; limit: number; total: number; totalPages: number } }>>('/grievances/my', { params });
   if (!res.data.success || !res.data.data) throw new Error(res.data.message || 'Failed to load complaints');
   return res.data.data;
 }

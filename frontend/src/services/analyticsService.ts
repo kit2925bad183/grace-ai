@@ -27,6 +27,24 @@ function buildParams(filters: AnalyticsFilters = {}) {
   return params;
 }
 
+export interface PublicGovernanceStats {
+  totalGrievances: number;
+  resolved: number;
+  inProgress: number;
+  slaCompliance: number;
+  slaAtRisk: number;
+  averageResolutionTime: number;
+  duplicateComplaints: number;
+}
+
+export async function getPublicGovernanceStats(): Promise<PublicGovernanceStats> {
+  const res = await api.get<ApiResponse<PublicGovernanceStats>>('/analytics/public-stats');
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || 'Failed to load public statistics');
+  }
+  return res.data.data;
+}
+
 export async function getAnalyticsOverview(filters?: AnalyticsFilters): Promise<AnalyticsOverview> {
   const res = await api.get<ApiResponse<AnalyticsOverview>>('/analytics/overview', {
     params: buildParams(filters),

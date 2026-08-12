@@ -1,6 +1,5 @@
 import { Link } from 'react-router-dom';
 import { Bell, LogOut, Menu, Shield, User } from 'lucide-react';
-import { DemoBadge } from '@/components/ui/DemoBadge';
 import type { AuthUser } from '@/types';
 
 interface PortalHeaderProps {
@@ -42,7 +41,6 @@ export function PortalHeader({
       </div>
 
       <div className="flex items-center gap-3">
-        <DemoBadge className="hidden sm:inline-flex" />
         <Link
           to={notificationsPath}
           className="relative rounded-lg p-2 text-navy-600 hover:bg-navy-50"

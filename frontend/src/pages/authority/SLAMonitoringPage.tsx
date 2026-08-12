@@ -9,8 +9,10 @@ import { ComplaintListSkeleton } from '@/components/skeletons/Skeletons';
 import { StatusBadge, SlaRiskBadge, formatDate } from '@/components/grievance/GrievanceBadges';
 import { ConfirmDialog } from '@/components/ui/Dialog';
 import { useToast } from '@/contexts/ToastContext';
+import { usePortalPaths } from '@/utils/portalPaths';
 
 export default function SLAMonitoringPage() {
+  const paths = usePortalPaths();
   const { success, error: toastError } = useToast();
   const [items, setItems] = useState<SlaMonitoringItem[]>([]);
   const [grouped, setGrouped] = useState<Record<string, number>>({});
@@ -172,7 +174,7 @@ export default function SLAMonitoringPage() {
                       <td className="px-4 py-3"><StatusBadge status={g.status} /></td>
                       <td className="px-4 py-3">
                         <div className="flex gap-2">
-                          <Link to={`/authority/grievances/${g.grievanceId}`} className="text-grace-cyan hover:underline">
+                          <Link to={paths.complaint(g.grievanceId)} className="text-grace-cyan hover:underline">
                             View
                           </Link>
                           {(item.riskLevel === 'HIGH' || item.riskLevel === 'CRITICAL') && (

@@ -8,17 +8,17 @@ import {
 } from '../controllers/officerController';
 
 const router = Router();
-const authorityRoles = [UserRole.AUTHORITY, UserRole.ADMIN];
+const manageRoles = [UserRole.DEPARTMENT, UserRole.HEAD_OF_DEPARTMENTS, UserRole.ADMIN];
 
 router.get(
   '/department/:departmentId',
   authenticate,
-  authorize(...authorityRoles),
+  authorize(...manageRoles),
   getOfficersByDepartment
 );
 
-router.get('/:id', authenticate, authorize(...authorityRoles), getOfficer);
+router.get('/:id', authenticate, authorize(...manageRoles), getOfficer);
 
-router.get('/', authenticate, authorize(...authorityRoles), listOfficers);
+router.get('/', authenticate, authorize(UserRole.HEAD_OF_DEPARTMENTS, UserRole.ADMIN), listOfficers);
 
 export default router;

@@ -1,49 +1,108 @@
 import { cn } from '@/utils/cn';
+import {
+  friendlyStatus,
+  friendlySlaShort,
+  friendlyDepartment,
+  friendlyPriority,
+} from '@/utils/civicLanguage';
 import type { GrievanceStatus, Priority, SLARiskLevel } from '@/types/grievance';
 
 const statusColors: Record<GrievanceStatus, string> = {
-  SUBMITTED: 'bg-navy-100 text-navy-700',
-  AI_ANALYZED: 'bg-purple-100 text-purple-700',
-  ASSIGNED: 'bg-blue-100 text-blue-700',
-  UNDER_REVIEW: 'bg-amber-100 text-amber-700',
-  IN_PROGRESS: 'bg-grace-cyan/20 text-grace-cyan',
-  ESCALATED: 'bg-orange-100 text-orange-700',
-  RESOLVED: 'bg-emerald-100 text-emerald-700',
-  CLOSED: 'bg-navy-100 text-navy-600',
-  REJECTED: 'bg-red-100 text-red-700',
+  SUBMITTED: 'bg-civic-mint text-civic-primary',
+  AI_ANALYZED: 'bg-civic-mint text-civic-primary',
+  ASSIGNED: 'bg-blue-50 text-blue-800',
+  UNDER_REVIEW: 'bg-amber-50 text-amber-800',
+  IN_PROGRESS: 'bg-amber-50 text-amber-900',
+  ESCALATED: 'bg-orange-50 text-orange-800',
+  RESOLVED: 'bg-green-50 text-civic-success',
+  CLOSED: 'bg-slate-100 text-civic-muted',
+  REJECTED: 'bg-red-50 text-civic-critical',
 };
 
 const priorityColors: Record<Priority, string> = {
-  LOW: 'bg-navy-100 text-navy-600',
-  MEDIUM: 'bg-amber-100 text-amber-700',
-  HIGH: 'bg-orange-100 text-orange-700',
-  CRITICAL: 'bg-red-100 text-red-700',
+  LOW: 'bg-slate-100 text-civic-muted',
+  MEDIUM: 'bg-civic-mint text-civic-primary',
+  HIGH: 'bg-amber-50 text-amber-800',
+  CRITICAL: 'bg-red-50 text-civic-critical',
 };
 
-const slaColors: Record<SLARiskLevel, string> = {
-  LOW: 'text-emerald-600',
-  MEDIUM: 'text-amber-600',
-  HIGH: 'text-orange-600',
-  CRITICAL: 'text-red-600',
-};
+/** Citizen-facing status badge — plain language */
+export function CitizenStatusBadge({ status }: { status: GrievanceStatus }) {
+  const f = friendlyStatus(status);
+  return (
+    <span className={cn('badge', statusColors[status] ?? 'bg-slate-100 text-civic-text')}>
+      <span aria-hidden="true">{f.icon}</span>
+      {f.label}
+    </span>
+  );
+}
 
+/** Authority-facing — technical status */
 export function StatusBadge({ status }: { status: GrievanceStatus }) {
   return (
-    <span className={cn('badge', statusColors[status] ?? 'bg-navy-100 text-navy-700')}>
+    <span className={cn('badge', statusColors[status] ?? 'bg-slate-100 text-civic-text')}>
       {status.replace(/_/g, ' ')}
     </span>
   );
 }
 
-export function PriorityBadge({ priority }: { priority: Priority }) {
+export function PriorityBadge({ priority, friendly = false }: { priority: Priority; friendly?: boolean }) {
   return (
-    <span className={cn('badge', priorityColors[priority])}>{priority}</span>
+    <span className={cn('badge', priorityColors[priority])}>
+      {friendly ? friendlyPriority(priority) : priority}
+    </span>
+  );
+}
+
+/** Citizen-friendly SLA indicator */
+export function SLAIndicator({
+  risk,
+  remainingHours,
+  estimatedDays,
+  showTechnical = false,
+}: {
+  risk?: SLARiskLevel | null;
+  remainingHours?: number;
+  estimatedDays?: number;
+  showTechnical?: boolean;
+}) {
+  if (!risk) return <span className="text-sm text-civic-muted">—</span>;
+  const { label, color } = friendlySlaShort(risk);
+  if (showTechnical) {
+    return (
+      <span className={cn('text-sm font-semibold', color)}>
+        {risk} {remainingHours != null && `· ${remainingHours}h left`}
+      </span>
+    );
+  }
+  return (
+    <p className={cn('text-sm font-medium', color)}>
+      {label}
+      {estimatedDays != null && (
+        <span className="mt-0.5 block text-xs font-normal text-civic-muted">
+          Expected within {estimatedDays} day{estimatedDays === 1 ? '' : 's'}
+        </span>
+      )}
+    </p>
   );
 }
 
 export function SlaRiskBadge({ risk }: { risk?: SLARiskLevel | null }) {
-  if (!risk) return <span className="text-xs text-navy-400">—</span>;
-  return <span className={cn('text-xs font-semibold', slaColors[risk])}>{risk}</span>;
+  return <SLAIndicator risk={risk} showTechnical />;
+}
+
+export function DepartmentLabel({
+  name,
+  friendly = true,
+}: {
+  name: string;
+  friendly?: boolean;
+}) {
+  return (
+    <span className="text-sm font-medium text-civic-text">
+      {friendly ? friendlyDepartment(name) : name}
+    </span>
+  );
 }
 
 export function formatDate(date: string): string {

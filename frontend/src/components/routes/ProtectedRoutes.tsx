@@ -1,12 +1,12 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import type { UserRole } from '@/types';
+import { getRoleDashboardPath, type UserRole } from '@/types';
 
 function LoadingScreen() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-navy-50">
-      <div className="flex items-center gap-3 text-navy-600">
+    <div className="flex min-h-screen items-center justify-center bg-grace-cream">
+      <div className="flex items-center gap-3 text-grace-coffee">
         <Loader2 className="h-6 w-6 animate-spin" />
         <span className="text-sm font-medium">Loading...</span>
       </div>
@@ -46,20 +46,30 @@ export function RoleRoute({ allowedRoles, redirectTo = '/unauthorized' }: RoleRo
   return <Outlet />;
 }
 
-export function CitizenRoute() {
+export function UserRoute() {
   return <RoleRoute allowedRoles={['CITIZEN']} />;
 }
 
-export function AuthorityRoute() {
-  return <RoleRoute allowedRoles={['AUTHORITY', 'ADMIN']} />;
+export function DepartmentRoute() {
+  return <RoleRoute allowedRoles={['DEPARTMENT']} />;
 }
 
-export function OfficerRoute() {
-  return <RoleRoute allowedRoles={['OFFICER']} />;
+export function HeadRoute() {
+  return <RoleRoute allowedRoles={['HEAD_OF_DEPARTMENTS']} />;
 }
 
 export function AdminRoute() {
   return <RoleRoute allowedRoles={['ADMIN']} />;
+}
+
+/** @deprecated use UserRoute */
+export function CitizenRoute() {
+  return <UserRoute />;
+}
+
+/** @deprecated department users use DepartmentRoute; head uses HeadRoute */
+export function AuthorityRoute() {
+  return <RoleRoute allowedRoles={['DEPARTMENT', 'HEAD_OF_DEPARTMENTS']} />;
 }
 
 export function GuestRoute() {
@@ -67,13 +77,7 @@ export function GuestRoute() {
 
   if (loading) return <LoadingScreen />;
   if (isAuthenticated && user) {
-    const paths: Record<UserRole, string> = {
-      CITIZEN: '/citizen/dashboard',
-      AUTHORITY: '/authority/dashboard',
-      OFFICER: '/officer/dashboard',
-      ADMIN: '/admin/system-data',
-    };
-    return <Navigate to={paths[user.role]} replace />;
+    return <Navigate to={getRoleDashboardPath(user.role)} replace />;
   }
 
   return <Outlet />;

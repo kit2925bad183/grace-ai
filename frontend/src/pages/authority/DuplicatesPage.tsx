@@ -7,8 +7,10 @@ import { ComplaintListSkeleton } from '@/components/skeletons/Skeletons';
 import { StatusBadge, formatDate } from '@/components/grievance/GrievanceBadges';
 import { ConfirmDialog } from '@/components/ui/Dialog';
 import { useToast } from '@/contexts/ToastContext';
+import { usePortalPaths } from '@/utils/portalPaths';
 
 export default function DuplicatesPage() {
+  const paths = usePortalPaths();
   const { success, error: toastError } = useToast();
   const [data, setData] = useState<{ items: DuplicateRecord[]; pagination: { page: number; totalPages: number; total: number } } | null>(null);
   const [loading, setLoading] = useState(true);
@@ -94,13 +96,13 @@ export default function DuplicatesPage() {
                 {(data?.items ?? []).map((d) => (
                   <tr key={d._id} className="border-b border-navy-50 hover:bg-navy-50/50">
                     <td className="px-4 py-3">
-                      <Link to={`/authority/grievances/${d.grievanceId.grievanceId}`} className="font-mono text-xs text-grace-cyan hover:underline">
+                      <Link to={paths.complaint(d.grievanceId.grievanceId)} className="font-mono text-xs text-grace-cyan hover:underline">
                         {d.grievanceId.grievanceId}
                       </Link>
                       <p className="max-w-[140px] truncate text-xs text-navy-500">{d.grievanceId.title}</p>
                     </td>
                     <td className="px-4 py-3">
-                      <Link to={`/authority/grievances/${d.matchedGrievanceId.grievanceId}`} className="font-mono text-xs text-grace-cyan hover:underline">
+                      <Link to={paths.complaint(d.matchedGrievanceId.grievanceId)} className="font-mono text-xs text-grace-cyan hover:underline">
                         {d.matchedGrievanceId.grievanceId}
                       </Link>
                       <p className="max-w-[140px] truncate text-xs text-navy-500">{d.matchedGrievanceId.title}</p>
@@ -112,7 +114,7 @@ export default function DuplicatesPage() {
                     <td className="px-4 py-3">
                       {d.status === 'POTENTIAL' ? (
                         <div className="flex flex-wrap gap-2">
-                          <Link to={`/authority/grievances/${d.grievanceId.grievanceId}`} className="text-xs text-grace-cyan hover:underline">
+                          <Link to={paths.complaint(d.grievanceId.grievanceId)} className="text-xs text-grace-cyan hover:underline">
                             Review
                           </Link>
                           <button

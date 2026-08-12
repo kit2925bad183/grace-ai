@@ -10,8 +10,12 @@ import { ErrorState } from '@/components/ui/ErrorState';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusBadge, PriorityBadge, SlaRiskBadge, formatDate } from '@/components/grievance/GrievanceBadges';
+import { useAuth } from '@/contexts/AuthContext';
+import { usePortalPaths } from '@/utils/portalPaths';
 
 export default function AuthorityGrievancesPage() {
+  const { user } = useAuth();
+  const paths = usePortalPaths();
   const [data, setData] = useState<{ items: GrievanceSummary[]; pagination: { page: number; totalPages: number; total: number } } | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [wards, setWards] = useState<Ward[]>([]);
@@ -37,11 +41,11 @@ export default function AuthorityGrievancesPage() {
 
   useEffect(() => {
     setLoading(true);
-    listGrievances({ ...filters, limit: 20 })
+    listGrievances({ ...filters, limit: 20 }, user?.role)
       .then(setData)
       .catch((err) => setError(err instanceof Error ? err.message : 'Failed to load'))
       .finally(() => setLoading(false));
-  }, [filters]);
+  }, [filters, user?.role]);
 
   const departments = [...new Map(categories.map((c) => [c.defaultDepartmentId._id, c.defaultDepartmentId])).values()];
 
@@ -141,7 +145,7 @@ export default function AuthorityGrievancesPage() {
                     </td>
                     <td className="px-4 py-3 text-navy-500">{formatDate(g.createdAt)}</td>
                     <td className="px-4 py-3">
-                      <Link to={`/authority/grievances/${g.grievanceId}`} className="text-grace-cyan hover:underline">
+                      <Link to={paths.complaint(g.grievanceId)} className="text-grace-coffee hover:underline">
                         View
                       </Link>
                     </td>

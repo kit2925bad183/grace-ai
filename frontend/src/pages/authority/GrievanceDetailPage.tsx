@@ -11,6 +11,7 @@ import {
 import type { GrievanceDetailResponse, StatusHistoryItem } from '@/types/grievance';
 import type { Officer } from '@/services/authorityService';
 import { useToast } from '@/contexts/ToastContext';
+import { usePortalPaths } from '@/utils/portalPaths';
 import { Dialog, ConfirmDialog } from '@/components/ui/Dialog';
 import { TimelineSkeleton } from '@/components/skeletons/Skeletons';
 import {
@@ -25,6 +26,7 @@ const STATUS_OPTIONS = ['ASSIGNED', 'UNDER_REVIEW', 'IN_PROGRESS', 'ESCALATED', 
 
 export default function AuthorityGrievanceDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const paths = usePortalPaths();
   const { success, error: toastError } = useToast();
   const [detail, setDetail] = useState<GrievanceDetailResponse | null>(null);
   const [timeline, setTimeline] = useState<StatusHistoryItem[]>([]);
@@ -112,7 +114,7 @@ export default function AuthorityGrievanceDetailPage() {
     return (
       <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-red-700">
         {error || 'Grievance not found'}
-        <Link to="/authority/grievances" className="mt-4 block text-grace-cyan hover:underline">Back</Link>
+        <Link to={paths.complaints} className="mt-4 block text-grace-coffee hover:underline">Back</Link>
       </div>
     );
   }
@@ -121,7 +123,7 @@ export default function AuthorityGrievanceDetailPage() {
 
   return (
     <div className="space-y-6">
-      <Link to="/authority/grievances" className="inline-flex items-center gap-1 text-sm text-grace-cyan hover:underline">
+      <Link to={paths.complaints} className="inline-flex items-center gap-1 text-sm text-grace-coffee hover:underline">
         <ArrowLeft className="h-4 w-4" /> Back to Grievances
       </Link>
 
@@ -168,8 +170,10 @@ export default function AuthorityGrievanceDetailPage() {
 
           {aiAnalysis && (
             <div className="rounded-xl border border-grace-cyan/20 bg-white p-6">
-              <h3 className="font-semibold text-navy-900">AI Demo Analysis</h3>
-              <p className="text-xs text-grace-cyan">AI Method: Rule-Based Demo · {aiAnalysis.analysisMethod}</p>
+              <h3 className="font-semibold text-navy-900">GRACE AI Analysis</h3>
+              {aiAnalysis.analysisMethod && (
+                <p className="text-xs text-grace-cyan">{aiAnalysis.analysisMethod}</p>
+              )}
               <div className="mt-4 grid gap-2 sm:grid-cols-2 text-sm">
                 <Info label="Category" value={aiAnalysis.category} />
                 <Info label="Department" value={aiAnalysis.department} />

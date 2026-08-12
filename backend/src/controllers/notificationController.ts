@@ -5,6 +5,7 @@ import {
   markNotificationRead,
 } from '../services/notificationService';
 import { AppError } from '../middleware/errorHandler';
+import { paramAsString } from '../utils/params';
 
 export async function listNotifications(req: Request, res: Response, next: NextFunction) {
   try {
@@ -26,7 +27,7 @@ export async function unreadCount(req: Request, res: Response, next: NextFunctio
 
 export async function markRead(req: Request, res: Response, next: NextFunction) {
   try {
-    const updated = await markNotificationRead(req.params.id, req.user!.id);
+    const updated = await markNotificationRead(paramAsString(req.params.id), req.user!.id);
     if (!updated) throw new AppError('Notification not found', 404);
     res.json({ success: true, data: { message: 'Notification marked as read' } });
   } catch (error) {

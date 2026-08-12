@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import { env } from './env';
+import { env, getMongoConfig } from './env';
 
 let isConnected = false;
 
@@ -8,14 +8,20 @@ export async function connectDatabase(): Promise<void> {
     return;
   }
 
-  if (!env.mongodbUri) {
+  const mongo = getMongoConfig();
+
+  if (!mongo.uri) {
     throw new Error('Unable to connect to MongoDB. MONGODB_URI is not configured.');
   }
 
   try {
     mongoose.set('strictQuery', true);
 
-    await mongoose.connect(env.mongodbUri);
+    await mongoose.connect(mongo.uri, {
+      ...(mongo.user && mongo.pass
+        ? { user: mongo.user, pass: mongo.pass, dbName: mongo.dbName }
+        : {}),
+    });
 
     isConnected = true;
     console.log('[database] MongoDB connected');

@@ -1,0 +1,83 @@
+# Redeploy anytime: GitHub → Actions → "Deploy GRACE AI" → Run workflow
+name: Deploy GRACE AI
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Deployment target
+        required: true
+        default: verify-only
+        type: choice
+        options:
+          - verify-only
+          - vercel-preview
+          - vercel-production
+  push:
+    branches: [main]
+
+concurrency:
+  group: grace-ai-deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    services:
+      mongodb:
+        image: mongo:7
+        ports:
+          - 27017:27017
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            frontend/package-lock.json
+            backend/package-lock.json
+
+      - name: Install
+        run: npm run install:all
+
+      - name: Build
+        run: npm run build
+
+      - name: Test
+        run: npm run test
+        env:
+          NODE_ENV: test
+          MONGODB_URI: mongodb://127.0.0.1:27017/grace-ai-test
+          JWT_SECRET: ci-test-jwt-secret-min-32-chars-long
+          JWT_REFRESH_SECRET: ci-test-refresh-secret-min-32-chars
+          CLIENT_URL: http://localhost:5173
+
+  deploy-vercel:
+    needs: verify
+    if: |
+      (github.event_name == 'workflow_dispatch' && inputs.target != 'verify-only') ||
+      (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend
+        run: npm ci --prefix frontend
+
+      - name: Deploy to Vercel
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          working-directory: frontend
+          vercel-args: ${{ github.event_name == 'workflow_dispatch' && inputs.target == 'vercel-production' && '--prod' || '' }}

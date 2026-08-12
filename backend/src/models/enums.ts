@@ -1,8 +1,21 @@
 export enum UserRole {
   CITIZEN = 'CITIZEN',
-  AUTHORITY = 'AUTHORITY',
-  OFFICER = 'OFFICER',
+  DEPARTMENT = 'DEPARTMENT',
+  HEAD_OF_DEPARTMENTS = 'HEAD_OF_DEPARTMENTS',
   ADMIN = 'ADMIN',
+}
+
+export enum UserStatus {
+  ACTIVE = 'ACTIVE',
+  SUSPENDED = 'SUSPENDED',
+  DISABLED = 'DISABLED',
+  PENDING = 'PENDING',
+}
+
+export enum AuthProvider {
+  LOCAL = 'LOCAL',
+  GOOGLE = 'GOOGLE',
+  BOTH = 'BOTH',
 }
 
 export enum GrievanceStatus {
@@ -67,4 +80,5 @@ export const COLLECTION_NAMES = [
   'analyticssnapshots',
   'policyimpacts',
   'airecommendations',
+  'auditlogs',
 ] as const;

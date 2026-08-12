@@ -23,9 +23,13 @@ AI-Powered Grievance Redressal & SLA Enforcement Platform
 
 GRACE AI is a full-stack GovTech MVP for intelligent grievance handling. Citizens submit complaints, receive AI-assisted classification and routing insights, and track resolution in real time. Authorities manage assignments, monitor SLAs, detect duplicates, and analyze trends — all persisted in MongoDB Atlas.
 
-**Status: WORKING HACKATHON MVP**
+**Status: Production-oriented deployable full-stack application**
 
-Current implementation is a working hackathon MVP built around React, Node.js, Express, MongoDB Atlas and modular rule-based AI services. The architecture is intentionally designed so the demonstration AI layer can later be replaced by production NLP/ML models such as BERT or DistilBERT without rewriting the core grievance workflow.
+GRACE AI is a deployable GovTech platform built around React, Node.js, Express, MongoDB Atlas, and modular rule-based AI services. It includes production-quality authentication (email verification, secure sessions, Google OAuth-ready, password reset) while preserving the existing grievance workflow architecture.
+
+📋 **[Deploy & Update Anytime](./DEPLOY.md)** — Vercel + Render + Atlas, redeploy on push or manual trigger
+
+📋 **[Production Upgrade Guide](./PRODUCTION_UPGRADE.md)** — auth, sessions, Google Sign-In, seed safety, tests
 
 ---
 

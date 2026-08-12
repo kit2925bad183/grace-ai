@@ -1,0 +1,17 @@
+{
+  "name": "GRACE AI",
+  "short_name": "GRACE AI",
+  "description": "Your voice. Our intelligence. Better governance.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F8FAFC",
+  "theme_color": "#0F766E",
+  "icons": [
+    {
+      "src": "/grace-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

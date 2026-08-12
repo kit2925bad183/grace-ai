@@ -4,7 +4,7 @@
  * WARNING: This script clears and recreates ALL application collections.
  * Intended ONLY for demo/development databases. Do NOT run against production.
  *
- * Usage: npm run seed
+ * Usage: npm run seed:demo
  */
 
 import bcrypt from 'bcrypt';
@@ -28,6 +28,7 @@ import {
   AnalyticsSnapshot,
   PolicyImpact,
   AIRecommendation,
+  AuditLog,
   GrievanceStatus,
   NotificationType,
   AnalysisMethod,
@@ -60,6 +61,7 @@ async function clearCollections(): Promise<void> {
   console.log(`${SEED_MARKER} Clearing demo application collections...`);
 
   const collections = [
+    AuditLog,
     AIRecommendation,
     PolicyImpact,
     AnalyticsSnapshot,
@@ -122,14 +124,31 @@ async function seed(): Promise<void> {
   console.log(`${SEED_MARKER} Created ${categoryDocs.length} categories`);
 
   // --- Users ---
+  const headEmail = process.env.HEAD_EMAIL?.toLowerCase().trim();
+  const headPassword = process.env.HEAD_PASSWORD;
+  const headPasswordHash = headPassword
+    ? await bcrypt.hash(headPassword, BCRYPT_ROUNDS)
+    : passwordHash;
+
   const userDocs = await User.insertMany(
-    USERS.map((u) => ({
-      name: u.name,
-      email: u.email,
-      passwordHash,
-      role: u.role,
-      phone: u.phone,
-    }))
+    USERS.map((u) => {
+      const departmentId =
+        u.departmentCode && u.role === 'DEPARTMENT'
+          ? deptByCode.get(u.departmentCode)!._id
+          : undefined;
+      const email = headEmail && u.role === 'HEAD_OF_DEPARTMENTS' ? headEmail : u.email;
+      return {
+        name: u.name,
+        email,
+        passwordHash: u.role === 'HEAD_OF_DEPARTMENTS' ? headPasswordHash : passwordHash,
+        role: u.role,
+        departmentId,
+        phone: u.phone,
+        authProvider: 'LOCAL',
+        emailVerified: true,
+        isActive: true,
+      };
+    })
   );
   const userByEmail = new Map(userDocs.map((u) => [u.email, u]));
   console.log(`${SEED_MARKER} Created ${userDocs.length} users`);

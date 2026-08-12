@@ -9,16 +9,16 @@ import {
 } from 'react';
 import { useNavigate } from 'react-router-dom';
 import * as authService from '@/services/authService';
-import { setUnauthorizedHandler, getStoredToken, clearStoredToken } from '@/services/api';
-import type { AuthUser, LoginCredentials, RegisterData, UserRole } from '@/types';
+import { setUnauthorizedHandler } from '@/services/api';
+import type { AuthUser, LoginCredentials, RegisterData, RegisterResult, UserRole } from '@/types';
 import { getRoleDashboardPath } from '@/types';
 
 interface AuthContextValue {
   user: AuthUser | null;
   loading: boolean;
   isAuthenticated: boolean;
-  login: (credentials: LoginCredentials) => Promise<AuthUser>;
-  register: (data: RegisterData) => Promise<AuthUser>;
+  login: (credentials: LoginCredentials) => Promise<{ user: AuthUser }>;
+  register: (data: RegisterData) => Promise<RegisterResult>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<AuthUser | null>;
   hasRole: (...roles: UserRole[]) => boolean;
@@ -32,26 +32,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
 
   const refreshUser = useCallback(async (): Promise<AuthUser | null> => {
-    const token = getStoredToken();
-    if (!token) {
-      setUser(null);
-      return null;
-    }
-
     try {
       const me = await authService.getMe();
       setUser(me);
       return me;
     } catch {
-      clearStoredToken();
-      setUser(null);
-      return null;
+      try {
+        const refreshed = await authService.refreshSession();
+        setUser(refreshed);
+        return refreshed;
+      } catch {
+        setUser(null);
+        return null;
+      }
     }
   }, []);
 
   useEffect(() => {
     setUnauthorizedHandler(() => {
-      clearStoredToken();
       setUser(null);
       navigate('/login', { replace: true });
     });
@@ -61,25 +59,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     refreshUser().finally(() => setLoading(false));
   }, [refreshUser]);
 
-  const login = useCallback(
-    async (credentials: LoginCredentials): Promise<AuthUser> => {
-      const result = await authService.login(credentials);
-      setUser(result.user);
-      return result.user;
-    },
-    []
-  );
-
-  const register = useCallback(async (data: RegisterData): Promise<AuthUser> => {
-    const result = await authService.register(data);
+  const login = useCallback(async (credentials: LoginCredentials) => {
+    const result = await authService.login(credentials);
     setUser(result.user);
-    return result.user;
+    return result;
+  }, []);
+
+  const register = useCallback(async (data: RegisterData): Promise<RegisterResult> => {
+    return authService.register(data);
   }, []);
 
   const logout = useCallback(async (): Promise<void> => {
-    await authService.logout();
-    setUser(null);
-    navigate('/login', { replace: true });
+    try {
+      await authService.logout();
+    } finally {
+      setUser(null);
+      navigate('/login', { replace: true });
+    }
   }, [navigate]);
 
   const hasRole = useCallback(

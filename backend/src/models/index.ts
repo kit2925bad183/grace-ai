@@ -14,3 +14,6 @@ export { Notification, INotification } from './Notification';
 export { AnalyticsSnapshot, IAnalyticsSnapshot } from './AnalyticsSnapshot';
 export { PolicyImpact, IPolicyImpact } from './PolicyImpact';
 export { AIRecommendation, IAIRecommendation } from './AIRecommendation';
+export { AuditLog, IAuditLog } from './AuditLog';
+export { SecurityEvent, ISecurityEvent } from './SecurityEvent';
+export { PlatformSettings, IPlatformSettings } from './PlatformSettings';

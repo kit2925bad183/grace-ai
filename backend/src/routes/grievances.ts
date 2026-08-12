@@ -20,16 +20,16 @@ import {
 } from '../controllers/grievanceController';
 
 const router = Router();
-const authorityRoles = [UserRole.AUTHORITY, UserRole.ADMIN];
+const manageRoles = [UserRole.DEPARTMENT, UserRole.HEAD_OF_DEPARTMENTS, UserRole.ADMIN];
 
-router.get('/', authenticate, authorize(...authorityRoles), listGrievances);
+router.get('/', authenticate, authorize(UserRole.HEAD_OF_DEPARTMENTS, UserRole.ADMIN), listGrievances);
 
 router.get('/my', authenticate, authorize(UserRole.CITIZEN), getMyGrievances);
 
 router.patch(
   '/:id/status',
   authenticate,
-  authorize(...authorityRoles),
+  authorize(...manageRoles),
   validateBody(updateStatusSchema),
   updateStatus
 );
@@ -37,7 +37,7 @@ router.patch(
 router.patch(
   '/:id/assign',
   authenticate,
-  authorize(...authorityRoles),
+  authorize(...manageRoles),
   validateBody(assignOfficerSchema),
   assignOfficerHandler
 );

@@ -7,7 +7,7 @@ import { analyzeGrievance } from '../controllers/grievanceController';
 import { getRecommendations } from '../controllers/aiController';
 
 const router = Router();
-const authorityRoles = [UserRole.AUTHORITY, UserRole.ADMIN];
+const manageRoles = [UserRole.DEPARTMENT, UserRole.HEAD_OF_DEPARTMENTS, UserRole.ADMIN];
 
 router.post(
   '/analyze-grievance',
@@ -20,7 +20,7 @@ router.post(
 router.get(
   '/recommendations',
   authenticate,
-  authorize(...authorityRoles),
+  authorize(UserRole.HEAD_OF_DEPARTMENTS, UserRole.ADMIN),
   getRecommendations
 );
 
