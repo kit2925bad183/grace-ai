@@ -49,6 +49,9 @@ export interface GrievanceSummary {
   };
   slaRisk?: SLARiskLevel | null;
   slaRiskPercentage?: number | null;
+  feedbackRating?: number | null;
+  feedbackComment?: string | null;
+  feedbackAt?: string | null;
 }
 
 export interface AIAnalysisResult {

@@ -566,3 +566,27 @@ export async function getGrievanceDuplicates(
     .sort({ similarityScore: -1 })
     .lean();
 }
+
+export async function submitGrievanceFeedback(
+  identifier: string,
+  citizenId: string,
+  input: { rating: number; comment?: string }
+) {
+  const grievance = await findGrievanceByIdentifier(identifier);
+  if (!grievance) throw new AppError('Grievance not found', 404);
+
+  if (grievance.citizenId.toString() !== citizenId) {
+    throw new AppError('You can only submit feedback on your own grievances', 403);
+  }
+
+  if (![GrievanceStatus.RESOLVED, GrievanceStatus.CLOSED].includes(grievance.status)) {
+    throw new AppError('Feedback is available after your grievance is resolved', 400);
+  }
+
+  grievance.feedbackRating = input.rating;
+  grievance.feedbackComment = input.comment?.trim() || undefined;
+  grievance.feedbackAt = new Date();
+  await grievance.save();
+
+  return Grievance.findById(grievance._id).populate(POPULATE_FIELDS).lean();
+}

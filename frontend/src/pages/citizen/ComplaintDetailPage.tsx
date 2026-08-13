@@ -13,6 +13,7 @@ import {
 } from '@/components/grievance/GrievanceBadges';
 import { friendlySlaMessage } from '@/utils/civicLanguage';
 import { usePortalPaths } from '@/utils/portalPaths';
+import { GrievanceFeedbackForm } from '@/components/grievance/GrievanceFeedbackForm';
 import { PageHeader } from '@/components/ui/PageHeader';
 
 export default function ComplaintDetailPage() {
@@ -87,9 +88,20 @@ export default function ComplaintDetailPage() {
       </div>
 
       <div className="card">
-        <h2 className="text-lg font-semibold text-civic-text">Your progress</h2>
+        <h2 className="text-lg font-semibold text-civic-text">Grievance tracking</h2>
+        <p className="mt-1 text-sm text-civic-muted">
+          SUBMITTED → AI CLASSIFIED → ROUTED → ASSIGNED → IN PROGRESS → RESOLVED → CLOSED
+        </p>
         <CitizenJourneyTimeline currentStatus={g.status} timeline={timeline} className="mt-6" />
       </div>
+
+      {['RESOLVED', 'CLOSED'].includes(g.status) && (
+        <GrievanceFeedbackForm
+          grievanceId={g.grievanceId}
+          existingRating={g.feedbackRating}
+          existingComment={g.feedbackComment}
+        />
+      )}
 
       <button
         type="button"

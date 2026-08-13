@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { authenticate, authorize } from '../middleware/authMiddleware';
 import { validateBody } from '../middleware/validate';
 import { UserRole } from '../models/enums';
-import { createGrievanceSchema } from '../validators/grievanceValidators';
+import { createGrievanceSchema, submitFeedbackSchema } from '../validators/grievanceValidators';
 import {
   updateStatusSchema,
   assignOfficerSchema,
@@ -17,6 +17,7 @@ import {
   listGrievances,
   updateStatus,
   assignOfficerHandler,
+  submitFeedback,
 } from '../controllers/grievanceController';
 
 const router = Router();
@@ -53,6 +54,14 @@ router.post(
   authorize(UserRole.CITIZEN),
   validateBody(createGrievanceSchema),
   createGrievance
+);
+
+router.post(
+  '/:id/feedback',
+  authenticate,
+  authorize(UserRole.CITIZEN),
+  validateBody(submitFeedbackSchema),
+  submitFeedback
 );
 
 export default router;

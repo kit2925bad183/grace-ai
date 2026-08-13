@@ -187,3 +187,16 @@ export async function assignOfficerHandler(req: Request, res: Response, next: Ne
     next(error);
   }
 }
+
+export async function submitFeedback(req: Request, res: Response, next: NextFunction) {
+  try {
+    const data = await grievanceService.submitGrievanceFeedback(
+      paramAsString(req.params.id),
+      req.user!.id,
+      req.body
+    );
+    res.json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+}

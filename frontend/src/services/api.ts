@@ -44,9 +44,9 @@ function getFriendlyErrorMessage(status: number | undefined, serverMessage?: str
     case 500:
     case 502:
     case 503:
-      return 'Unable to process request. Please try again later.';
+      return serverMessage || 'The server is temporarily unavailable. Please try again in a moment.';
     default:
-      if (!status) return 'Server unavailable. Please check your connection.';
+      if (!status) return 'Cannot reach the API server. Check VITE_API_URL and that the Render backend is running.';
       return serverMessage || 'An unexpected error occurred.';
   }
 }

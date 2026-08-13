@@ -73,3 +73,12 @@ export async function getGrievanceSla(id: string): Promise<SLAPrediction> {
   if (!res.data.success || !res.data.data) throw new Error(res.data.message || 'Failed to load SLA');
   return res.data.data;
 }
+
+export async function submitGrievanceFeedback(
+  id: string,
+  payload: { rating: number; comment?: string }
+): Promise<GrievanceSummary> {
+  const res = await api.post<ApiResponse<GrievanceSummary>>(`/grievances/${id}/feedback`, payload);
+  if (!res.data.success || !res.data.data) throw new Error(res.data.message || 'Failed to submit feedback');
+  return res.data.data;
+}

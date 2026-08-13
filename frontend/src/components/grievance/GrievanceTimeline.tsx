@@ -1,9 +1,8 @@
 import type { GrievanceStatus, StatusHistoryItem } from '@/types/grievance';
 import {
   FRIENDLY_STATUS,
-  JOURNEY_STEPS,
-  friendlyStatus,
-  statusIndex,
+  POSTER_JOURNEY,
+  posterJourneyIndex,
 } from '@/utils/civicLanguage';
 import { cn } from '@/utils/cn';
 import { CheckCircle2, Circle, Clock } from 'lucide-react';
@@ -15,13 +14,12 @@ interface CitizenJourneyProps {
 }
 
 export function CitizenJourneyTimeline({ currentStatus, timeline, className }: CitizenJourneyProps) {
-  const currentIdx = statusIndex(currentStatus);
+  const currentIdx = posterJourneyIndex(currentStatus);
   const isRejected = currentStatus === 'REJECTED';
 
-  const stepMessages = JOURNEY_STEPS.map((step) => {
-    const historyItem = timeline.find((t) => t.newStatus === step);
-    const friendly = friendlyStatus(step);
-    return { step, friendly, historyItem };
+  const stepMessages = POSTER_JOURNEY.map(({ status, label, description }) => {
+    const historyItem = timeline.find((t) => t.newStatus === status);
+    return { status, label, description, historyItem };
   });
 
   if (isRejected) {
@@ -34,15 +32,18 @@ export function CitizenJourneyTimeline({ currentStatus, timeline, className }: C
   }
 
   return (
-    <ol className={cn('space-y-0', className)} aria-label="Complaint progress">
-      {stepMessages.map(({ step, friendly, historyItem }, index) => {
-        const stepIdx = statusIndex(step);
+    <ol className={cn('space-y-0', className)} aria-label="Grievance progress">
+      {stepMessages.map(({ status, label, description, historyItem }, index) => {
+        const stepIdx = posterJourneyIndex(status);
         const isComplete = currentIdx > stepIdx;
-        const isCurrent = currentIdx === stepIdx || (step === 'IN_PROGRESS' && ['UNDER_REVIEW', 'ESCALATED', 'IN_PROGRESS'].includes(currentStatus) && stepIdx === 3);
-        const isPending = currentIdx < stepIdx && !isCurrent;
+        const isCurrent =
+          currentIdx === stepIdx ||
+          (status === 'IN_PROGRESS' &&
+            ['UNDER_REVIEW', 'ESCALATED', 'IN_PROGRESS'].includes(currentStatus) &&
+            stepIdx === 3);
 
         return (
-          <li key={step} className="relative flex gap-4 pb-8 last:pb-0">
+          <li key={status} className="relative flex gap-4 pb-8 last:pb-0">
             {index < stepMessages.length - 1 && (
               <span
                 className={cn(
@@ -57,7 +58,7 @@ export function CitizenJourneyTimeline({ currentStatus, timeline, className }: C
                 'relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2',
                 isComplete && 'border-civic-success bg-civic-success text-white',
                 isCurrent && 'border-civic-primary bg-civic-mint text-civic-primary',
-                isPending && 'border-civic-border bg-white text-civic-muted'
+                !isComplete && !isCurrent && 'border-civic-border bg-white text-civic-muted'
               )}
               aria-hidden="true"
             >
@@ -70,13 +71,15 @@ export function CitizenJourneyTimeline({ currentStatus, timeline, className }: C
               )}
             </div>
             <div className="min-w-0 flex-1 pt-1">
-              <p className="text-base font-semibold text-civic-text">
-                <span aria-hidden="true">{friendly.icon} </span>
-                {friendly.label}
-              </p>
+              <p className="text-base font-semibold uppercase tracking-wide text-civic-text">{label}</p>
               <p className="mt-0.5 text-sm text-civic-muted">
-                {historyItem?.comment || friendly.description}
+                {historyItem?.comment || description}
               </p>
+              {historyItem?.createdAt && (
+                <p className="mt-1 text-xs text-civic-muted">
+                  {new Date(historyItem.createdAt).toLocaleString()}
+                </p>
+              )}
               {isCurrent && (
                 <span className="mt-2 inline-block rounded-full bg-civic-primary/10 px-2.5 py-0.5 text-xs font-medium text-civic-primary">
                   Current step
@@ -86,17 +89,6 @@ export function CitizenJourneyTimeline({ currentStatus, timeline, className }: C
           </li>
         );
       })}
-      {currentStatus === 'CLOSED' && currentIdx >= 4 && (
-        <li className="flex gap-4 pt-2">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-civic-border bg-white text-civic-muted">
-            <Circle className="h-4 w-4" />
-          </div>
-          <div className="pt-1">
-            <p className="font-semibold text-civic-text">⚪ Completed</p>
-            <p className="text-sm text-civic-muted">This complaint is closed</p>
-          </div>
-        </li>
-      )}
     </ol>
   );
 }

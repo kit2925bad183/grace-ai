@@ -1,6 +1,19 @@
 import type { GrievanceStatus, Priority, SLARiskLevel } from '@/types/grievance';
 
-/** Citizen-friendly status labels — backend status values unchanged */
+/** Poster-style public journey labels mapped to backend statuses */
+export const POSTER_JOURNEY: Array<{
+  status: GrievanceStatus;
+  label: string;
+  description: string;
+}> = [
+  { status: 'SUBMITTED', label: 'Submitted', description: 'Your grievance has been received.' },
+  { status: 'AI_ANALYZED', label: 'AI Classified', description: 'GRACE AI analyzed category, priority, and routing.' },
+  { status: 'ASSIGNED', label: 'Routed & Assigned', description: 'Routed to the responsible department and assigned.' },
+  { status: 'IN_PROGRESS', label: 'In Progress', description: 'The department is actively working on your grievance.' },
+  { status: 'RESOLVED', label: 'Resolved', description: 'The reported issue has been addressed.' },
+  { status: 'CLOSED', label: 'Closed', description: 'This grievance is complete.' },
+];
+
 export const FRIENDLY_STATUS: Record<GrievanceStatus, { label: string; description: string; icon: string }> = {
   SUBMITTED: { label: 'Received', description: 'Your complaint has been received.', icon: '✓' },
   AI_ANALYZED: { label: 'Reviewed by GRACE AI', description: 'GRACE AI has analyzed your complaint.', icon: '✓' },
@@ -19,6 +32,7 @@ export const JOURNEY_STEPS: GrievanceStatus[] = [
   'ASSIGNED',
   'IN_PROGRESS',
   'RESOLVED',
+  'CLOSED',
 ];
 
 export function friendlyStatus(status: GrievanceStatus) {
@@ -100,8 +114,12 @@ export function statusIndex(status: GrievanceStatus): number {
     IN_PROGRESS: 3,
     ESCALATED: 3,
     RESOLVED: 4,
-    CLOSED: 4,
+    CLOSED: 5,
     REJECTED: -1,
   };
   return map[status] ?? 0;
+}
+
+export function posterJourneyIndex(status: GrievanceStatus): number {
+  return statusIndex(status);
 }

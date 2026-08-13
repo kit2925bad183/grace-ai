@@ -25,3 +25,10 @@ export const createGrievanceSchema = z.object({
 export const analyzeGrievanceSchema = createGrievanceSchema;
 
 export type CreateGrievanceBody = z.infer<typeof createGrievanceSchema>;
+
+export const submitFeedbackSchema = z.object({
+  rating: z.number().int().min(1, 'Rating must be at least 1').max(5, 'Rating must be at most 5'),
+  comment: z.string().max(1000, 'Comment must be at most 1000 characters').trim().optional(),
+});
+
+export type SubmitFeedbackBody = z.infer<typeof submitFeedbackSchema>;

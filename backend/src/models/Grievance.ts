@@ -16,6 +16,9 @@ export interface IGrievance extends Document {
   slaDeadline: Date;
   resolvedAt?: Date;
   mergedIntoGrievanceId?: Types.ObjectId;
+  feedbackRating?: number;
+  feedbackComment?: string;
+  feedbackAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -91,6 +94,19 @@ const grievanceSchema = new Schema<IGrievance>(
     mergedIntoGrievanceId: {
       type: Schema.Types.ObjectId,
       ref: 'Grievance',
+    },
+    feedbackRating: {
+      type: Number,
+      min: 1,
+      max: 5,
+    },
+    feedbackComment: {
+      type: String,
+      trim: true,
+      maxlength: 1000,
+    },
+    feedbackAt: {
+      type: Date,
     },
   },
   { timestamps: true }
