@@ -68,6 +68,9 @@ export default function LandingPage() {
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 sm:px-6">
           <BrandLogo size="sm" to="/" />
           <div className="flex items-center gap-3">
+            <Link to="/showcase" className="btn-ghost text-sm hidden sm:inline-flex">
+              Demo Workflow
+            </Link>
             <Link to="/login" className="btn-ghost text-sm">
               Login
             </Link>
@@ -106,6 +109,9 @@ export default function LandingPage() {
                 </Link>
                 <Link to={user ? '/user/track' : '/login'} className="btn-outline min-w-[200px]">
                   Track Grievance
+                </Link>
+                <Link to="/showcase" className="btn-outline min-w-[200px] border-teal-300 text-teal-800 hover:bg-teal-50">
+                  Live Demo Guide
                 </Link>
               </div>
             </div>

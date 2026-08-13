@@ -22,6 +22,7 @@ import adminRoutes from './routes/admin';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import { requestIdMiddleware } from './middleware/requestId';
 import { maintenanceModeGuard } from './middleware/maintenanceMode';
+import { databaseAvailabilityGuard } from './middleware/databaseGuard';
 
 export function createApp() {
   const app = express();
@@ -65,6 +66,7 @@ export function createApp() {
   app.use(maintenanceModeGuard);
 
   app.use('/api', healthRoutes);
+  app.use(databaseAvailabilityGuard);
   app.use('/api/auth', authRoutes);
   app.use('/api/grievances', grievanceRoutes);
   app.use('/api/ai', aiRoutes);

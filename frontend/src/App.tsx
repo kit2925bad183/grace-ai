@@ -47,6 +47,7 @@ import AdminUsersPage from '@/pages/admin/UsersPage';
 import AdminSecurityPage from '@/pages/admin/SecurityPage';
 import HelpPage from '@/pages/citizen/HelpPage';
 import StatusPage from '@/pages/StatusPage';
+import ShowcasePage from '@/pages/ShowcasePage';
 import NotFoundPage, { TrackComplaintPage } from '@/pages/NotFoundPage';
 
 function App() {
@@ -56,6 +57,7 @@ function App() {
         <ToastProvider>
           <Routes>
             <Route path="/" element={<LandingPage />} />
+            <Route path="/showcase" element={<ShowcasePage />} />
             <Route path="/status" element={<StatusPage />} />
             <Route path="/unauthorized" element={<UnauthorizedPage />} />
 

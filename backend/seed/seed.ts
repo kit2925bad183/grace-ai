@@ -182,7 +182,7 @@ async function seed(): Promise<void> {
   );
   console.log(`${SEED_MARKER} Created ${officerDocs.length} officers`);
 
-  const authorityUser = userByEmail.get('authority@grace.demo')!;
+  const authorityUser = userByEmail.get('head@grace.demo')!;
   const citizenUsers = userDocs.filter((u) => u.role === 'CITIZEN');
 
   // --- Grievances ---
@@ -538,7 +538,7 @@ async function seed(): Promise<void> {
   console.log(`${SEED_MARKER} ========================================`);
   console.log(`${SEED_MARKER} Demo Accounts (password: ${DEMO_PASSWORD}):`);
   console.log(`${SEED_MARKER}   Citizen:   citizen@grace.demo`);
-  console.log(`${SEED_MARKER}   Authority: authority@grace.demo`);
+  console.log(`${SEED_MARKER}   Head:      head@grace.demo`);
   console.log(`${SEED_MARKER}   Admin:     admin@grace.demo`);
   console.log(`${SEED_MARKER}   Officers:  roads.officer@grace.demo`);
   console.log(`${SEED_MARKER}              water.officer@grace.demo`);

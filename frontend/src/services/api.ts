@@ -44,7 +44,7 @@ function getFriendlyErrorMessage(status: number | undefined, serverMessage?: str
     case 500:
     case 502:
     case 503:
-      return serverMessage || 'The server is temporarily unavailable. Please try again in a moment.';
+      return serverMessage || 'The server is temporarily unavailable. Database may still be connecting — try again shortly.';
     default:
       if (!status) return 'Cannot reach the API server. Check VITE_API_URL and that the Render backend is running.';
       return serverMessage || 'An unexpected error occurred.';

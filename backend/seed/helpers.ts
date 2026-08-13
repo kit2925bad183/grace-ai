@@ -133,6 +133,7 @@ export const WARDS: WardSeed[] = [
 export const USERS: UserSeed[] = [
   { name: 'Demo Citizen', email: 'citizen@grace.demo', role: 'CITIZEN', phone: '9876543210' },
   { name: 'System Head', email: 'head@grace.demo', role: 'HEAD_OF_DEPARTMENTS', phone: '9876543211' },
+  { name: 'Platform Admin', email: 'admin@grace.demo', role: 'ADMIN', phone: '9876543212' },
   { name: 'Roads Department', email: 'roads@grace.ai', role: 'DEPARTMENT', phone: '9876543213', departmentCode: 'ROADS' },
   { name: 'Water Department', email: 'water@grace.ai', role: 'DEPARTMENT', phone: '9876543214', departmentCode: 'WATER' },
   { name: 'Sanitation Department', email: 'sanitation@grace.ai', role: 'DEPARTMENT', phone: '9876543215', departmentCode: 'SANITATION' },

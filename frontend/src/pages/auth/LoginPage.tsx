@@ -1,14 +1,20 @@
 import { useState, FormEvent, useEffect } from 'react';
 import { Link, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
-import { Shield, Loader2, AlertCircle, Eye, EyeOff, User, Building2, Lock } from 'lucide-react';
+import { Shield, Loader2, AlertCircle, Eye, EyeOff, User, Building2, Lock, Crown, Presentation } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { AuthLayout } from '@/components/auth/AuthLayout';
 import { GoogleSignInButton } from '@/components/auth/GoogleSignInButton';
+import { DEMO_ACCOUNTS, DEMO_PASSWORD } from '@/constants/demoAccounts';
 import { getRoleDashboardPath } from '@/types';
 
-const QUICK_USER = { email: 'citizen@grace.demo', password: 'Demo@1234' };
-const QUICK_HEAD = { email: 'head@grace.demo', password: 'Demo@1234' };
-const QUICK_DEPARTMENT = { email: 'roads@grace.ai', password: 'Demo@1234' };
+type QuickKey = (typeof DEMO_ACCOUNTS)[number]['key'];
+
+const QUICK_ICONS: Record<QuickKey, typeof User> = {
+  citizen: User,
+  department: Building2,
+  head: Crown,
+  admin: Shield,
+};
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -23,7 +29,7 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
-  const [quickLoading, setQuickLoading] = useState<'user' | 'department' | 'head' | null>(null);
+  const [quickLoading, setQuickLoading] = useState<QuickKey | null>(null);
 
   useEffect(() => {
     const urlError = searchParams.get('error');
@@ -52,12 +58,12 @@ export default function LoginPage() {
     }
   };
 
-  const handleQuickLogin = async (type: 'user' | 'department' | 'head') => {
-    const credentials =
-      type === 'user' ? QUICK_USER : type === 'department' ? QUICK_DEPARTMENT : QUICK_HEAD;
-    setQuickLoading(type);
+  const handleQuickLogin = async (key: QuickKey) => {
+    const account = DEMO_ACCOUNTS.find((a) => a.key === key);
+    if (!account) return;
+    setQuickLoading(key);
     try {
-      const result = await login(credentials);
+      const result = await login({ email: account.email, password: DEMO_PASSWORD });
       redirectAfterLogin(result.user.role);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Sign in failed');
@@ -126,12 +132,27 @@ export default function LoginPage() {
           New here? <Link to="/register" className="font-semibold text-civic-primary hover:underline">Create account</Link>
         </p>
 
+        <Link
+          to="/showcase"
+          className="mt-6 flex items-center justify-center gap-2 rounded-xl border border-teal-200 bg-teal-50 px-4 py-3 text-sm font-medium text-teal-900 hover:bg-teal-100"
+        >
+          <Presentation className="h-4 w-4" aria-hidden="true" />
+          View full demo workflow & credentials
+        </Link>
+
         <div className="mt-8 border-t border-civic-border pt-6">
-          <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-civic-muted">Quick access</p>
+          <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-civic-muted">Quick access · Demo@1234</p>
           <div className="space-y-3">
-            <QuickCard type="user" loading={quickLoading === 'user'} disabled={loading || quickLoading !== null} onClick={() => handleQuickLogin('user')} />
-            <QuickCard type="department" loading={quickLoading === 'department'} disabled={loading || quickLoading !== null} onClick={() => handleQuickLogin('department')} />
-            <QuickCard type="head" loading={quickLoading === 'head'} disabled={loading || quickLoading !== null} onClick={() => handleQuickLogin('head')} />
+            {DEMO_ACCOUNTS.map((account) => (
+              <QuickCard
+                key={account.key}
+                label={account.label}
+                Icon={QUICK_ICONS[account.key]}
+                loading={quickLoading === account.key}
+                disabled={loading || quickLoading !== null}
+                onClick={() => handleQuickLogin(account.key)}
+              />
+            ))}
           </div>
         </div>
       </div>
@@ -139,10 +160,19 @@ export default function LoginPage() {
   );
 }
 
-function QuickCard({ type, loading, disabled, onClick }: { type: 'user' | 'department' | 'head'; loading: boolean; disabled: boolean; onClick: () => void }) {
-  const label =
-    type === 'user' ? 'Citizen Portal' : type === 'department' ? 'Department Portal' : 'System Head';
-  const Icon = type === 'user' ? User : Building2;
+function QuickCard({
+  label,
+  Icon,
+  loading,
+  disabled,
+  onClick,
+}: {
+  label: string;
+  Icon: typeof User;
+  loading: boolean;
+  disabled: boolean;
+  onClick: () => void;
+}) {
   return (
     <button type="button" onClick={onClick} disabled={disabled} className="flex w-full items-center gap-3 rounded-xl border border-civic-border bg-civic-mint/30 p-4 text-left transition hover:bg-civic-mint/60 disabled:opacity-60">
       <Icon className="h-5 w-5 text-civic-primary" aria-hidden="true" />
