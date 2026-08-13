@@ -1,0 +1,27 @@
+# Render Blueprint — GRACE AI API (monorepo root)
+# Connect this repo in Render Dashboard → New Blueprint, or set Root Directory = backend manually.
+services:
+  - type: web
+    name: grace-ai-api
+    runtime: node
+    rootDir: backend
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_REFRESH_SECRET
+        sync: false
+      - key: CLIENT_URL
+        value: https://frontend-six-nu-69.vercel.app
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_CALLBACK_URL
+        value: https://grace-ai-e7m3.onrender.com/api/auth/google/callback
